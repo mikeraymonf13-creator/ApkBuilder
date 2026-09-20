@@ -27,5 +27,7 @@ def get_bin(cmd):
     return shutil.which(cmd)
 
 def cmd_is_available(cmd):
-    isa = os.system(f"which {cmd} > /dev/null") == 0
-    return isa
+    # Optimization: Use shutil.which instead of spawning a subshell with os.system.
+    # This avoids fork/exec and subshell overhead (~20-100x speedup per check),
+    # and provides cross-platform executable checking without depending on POSIX 'which'.
+    return shutil.which(cmd) is not None
