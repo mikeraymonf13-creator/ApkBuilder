@@ -1,4 +1,4 @@
-const CACHE_NAME = 'borderp45-cache-v1';
+const CACHE_NAME = 'borderp45-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
