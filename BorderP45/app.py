@@ -70,5 +70,102 @@ def transfer_jetton():
         "comment": comment
     }), 200
 
+@app.route("/api/tonconnect/parse", methods=["GET", "POST"])
+def tonconnect_parse():
+    import json
+    from urllib.parse import unquote, parse_qs, urlparse
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        raw_url = data.get("url") or ""
+    else:
+        raw_url = request.args.get("url") or ""
+
+    version = request.args.get("v") or ""
+    connect_id = request.args.get("id") or ""
+    request_payload_raw = request.args.get("r") or ""
+    return_url = request.args.get("ret") or ""
+
+    if raw_url and not (version or connect_id or request_payload_raw or return_url):
+        parsed = urlparse(raw_url)
+        params = parse_qs(parsed.query)
+        version = params.get("v", [""])[0]
+        connect_id = params.get("id", [""])[0]
+        request_payload_raw = params.get("r", [""])[0]
+        return_url = params.get("ret", [""])[0]
+
+    request_payload = {}
+    if request_payload_raw:
+        try:
+            request_payload = json.loads(request_payload_raw)
+        except Exception:
+            try:
+                request_payload = json.loads(unquote(request_payload_raw))
+            except Exception:
+                request_payload = {"raw": request_payload_raw}
+
+    manifest_url = request_payload.get("manifestUrl", "")
+    items = request_payload.get("items", [])
+
+    return jsonify({
+        "success": True,
+        "v": version,
+        "id": connect_id,
+        "ret": return_url,
+        "request": request_payload,
+        "manifestUrl": manifest_url,
+        "items": items
+    }), 200
+
+@app.route("/api/tonconnect/connect", methods=["POST"])
+def tonconnect_connect():
+    data = request.get_json(silent=True) or {}
+    connect_id = data.get("id", "")
+    address = data.get("address", "EQD_simulated_wallet_address_1234567890")
+    return_url = data.get("ret", "")
+
+    proof_signature = os.urandom(32).hex()
+
+    response_event = {
+        "event": "connect",
+        "id": connect_id,
+        "payload": {
+            "items": [
+                {
+                    "name": "ton_addr",
+                    "address": address,
+                    "network": "-239",
+                    "publicKey": os.urandom(32).hex(),
+                    "walletStateInit": "te6ccgEBAQEAAgAAAA=="
+                },
+                {
+                    "name": "ton_proof",
+                    "proof": {
+                        "timestamp": 1700000000,
+                        "domain": {
+                            "lengthBytes": 12,
+                            "value": "tonviewer.com"
+                        },
+                        "signature": proof_signature,
+                        "payload": data.get("proof_payload", "")
+                    }
+                }
+            ],
+            "device": {
+                "platform": "chrome",
+                "appName": "BorderP45",
+                "appVersion": "1.0.0",
+                "maxProtocolVersion": 2
+            }
+        }
+    }
+
+    return jsonify({
+        "success": True,
+        "message": "TonConnect connection approved",
+        "response": response_event,
+        "return_url": return_url
+    }), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

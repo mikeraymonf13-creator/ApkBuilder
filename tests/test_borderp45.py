@@ -47,3 +47,34 @@ def test_borderp45_routes():
     data_jetton = json.loads(res_jetton.data)
     assert data_jetton['success'] is True
     assert data_jetton['jetton_master'] == 'EQB456'
+
+def test_tonconnect_parse_route():
+    from app import app
+    client = app.test_client()
+
+    tc_url = "https://connect.gramwallet.io/?v=2&id=fd97f7f6ad60461e4885761d2cdc430d130c6c19854af1e8771685d0675e1f11&trace_id=01a0ca5f-f49a-73b4-b0e9-d5cfeed14928&r=%7B%22manifestUrl%22%3A%22https%3A%2F%2Ftonviewer.com%2Ftc-manifest.json%22%2C%22items%22%3A%5B%7B%22name%22%3A%22ton_addr%22%7D%2C%7B%22name%22%3A%22ton_proof%22%2C%22payload%22%3A%220d21184fedec258206e26530bd09fc347b1279f83b12e87ccbbeab6ab1286e12%22%7D%5D%7D&ret=https%3A%2F%2Ftonviewer.com%2Ftransaction%2Ff177ef98dad79d87295f17cd8e7816ab6ef715355a7e22c7477baf701b9017a6"
+
+    res = client.post('/api/tonconnect/parse', json={'url': tc_url})
+    assert res.status_code == 200
+    data = json.loads(res.data)
+    assert data['success'] is True
+    assert data['v'] == '2'
+    assert data['id'] == 'fd97f7f6ad60461e4885761d2cdc430d130c6c19854af1e8771685d0675e1f11'
+    assert data['manifestUrl'] == 'https://tonviewer.com/tc-manifest.json'
+    assert len(data['items']) == 2
+
+def test_tonconnect_connect_route():
+    from app import app
+    client = app.test_client()
+
+    res = client.post('/api/tonconnect/connect', json={
+        'id': 'test_connect_id',
+        'address': 'EQD12345',
+        'ret': 'https://tonviewer.com/return',
+        'proof_payload': '0d21184fedec258206e26530bd09fc347b1279f83b12e87ccbbeab6ab1286e12'
+    })
+    assert res.status_code == 200
+    data = json.loads(res.data)
+    assert data['success'] is True
+    assert data['response']['event'] == 'connect'
+    assert data['response']['id'] == 'test_connect_id'
