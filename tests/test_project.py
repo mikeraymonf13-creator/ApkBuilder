@@ -104,5 +104,10 @@ android:
         result = proj.find_files(nonexistent, ".java")
         self.assertEqual(result, [])
 
+    def test_cmd_is_available(self):
+        from utils.util import cmd_is_available
+        self.assertTrue(cmd_is_available("python3"))
+        self.assertFalse(cmd_is_available("non_existent_executable_12345"))
+
 if __name__ == "__main__":
     unittest.main()
