@@ -74,6 +74,14 @@ def test_borderp45_routes():
     data_parse_get = json.loads(res_parse_get.data)
     assert data_parse_get['success'] is True
 
+    # Test parse route with ton address view URL
+    view_url = "https://go.gramwallet.io/view/?ton=UQBVHkPhkJvxjq2bDun3-ju0cQNOpHYxVkWCwYAyClohC9Bn"
+    res_view = client.post('/api/tonconnect/parse', json={'url': view_url})
+    assert res_view.status_code == 200
+    data_view = json.loads(res_view.data)
+    assert data_view['success'] is True
+    assert data_view['parsed']['ton_address'] == 'UQBVHkPhkJvxjq2bDun3-ju0cQNOpHYxVkWCwYAyClohC9Bn'
+
     # Test TON Connect connect route
     res_connect = client.post('/api/tonconnect/connect', json={
         'id': 'fd97f7f6ad60461e4885761d2cdc430d130c6c19854af1e8771685d0675e1f11',

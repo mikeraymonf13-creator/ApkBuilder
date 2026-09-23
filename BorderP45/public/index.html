@@ -255,6 +255,7 @@
       <div id="tonConnectDetails" style="display:none; margin-top:16px; background-color:#0f172a; padding:16px; border-radius:8px; border:1px solid var(--border-color);">
         <h3 style="font-size:1.05rem; margin-bottom:12px; color:#38bdf8;">Parsed Endpoint Details</h3>
         <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Host:</strong> <span id="tcHost"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;" id="tcTonAddressRow" style="display:none;"><strong>TON Address:</strong> <span id="tcTonAddress" style="word-break:break-all;"></span></p>
         <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Version:</strong> <span id="tcVersion"></span></p>
         <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Client ID:</strong> <span id="tcClientId" style="word-break:break-all;"></span></p>
         <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Trace ID:</strong> <span id="tcTraceId"></span></p>
@@ -352,6 +353,12 @@
         if (response.ok && result.success) {
           currentParsedData = result.parsed;
           document.getElementById('tcHost').textContent = result.parsed.host || 'N/A';
+          if (result.parsed.ton_address) {
+            document.getElementById('tcTonAddress').textContent = result.parsed.ton_address;
+            document.getElementById('tcTonAddressRow').style.display = 'block';
+          } else {
+            document.getElementById('tcTonAddressRow').style.display = 'none';
+          }
           document.getElementById('tcVersion').textContent = result.parsed.version || 'N/A';
           document.getElementById('tcClientId').textContent = result.parsed.id || 'N/A';
           document.getElementById('tcTraceId').textContent = result.parsed.trace_id || 'N/A';

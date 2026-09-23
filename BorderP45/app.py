@@ -93,6 +93,7 @@ def parse_tonconnect_endpoint():
         trace_id = params.get("trace_id", [""])[0]
         return_url = params.get("ret", [""])[0]
         raw_r = params.get("r", [""])[0]
+        ton_address = params.get("ton", [""])[0]
 
         manifest_url = ""
         items = []
@@ -113,6 +114,7 @@ def parse_tonconnect_endpoint():
                 "return_url": return_url,
                 "manifest_url": manifest_url,
                 "items": items,
+                "ton_address": ton_address,
                 "host": parsed_url.netloc,
                 "scheme": parsed_url.scheme
             }
