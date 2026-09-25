@@ -70,5 +70,79 @@ def transfer_jetton():
         "comment": comment
     }), 200
 
+@app.route("/api/tonconnect/parse", methods=["POST", "GET"])
+def parse_tonconnect_endpoint():
+    import json
+    from urllib.parse import urlparse, parse_qs
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        url = data.get("url", "")
+    else:
+        url = request.args.get("url", "")
+
+    if not url:
+        return jsonify({"success": False, "error": "URL parameter is required"}), 400
+
+    try:
+        parsed_url = urlparse(url)
+        params = parse_qs(parsed_url.query)
+
+        version = params.get("v", [""])[0]
+        client_id = params.get("id", [""])[0]
+        trace_id = params.get("trace_id", [""])[0]
+        return_url = params.get("ret", [""])[0]
+        raw_r = params.get("r", [""])[0]
+        ton_address = params.get("ton", [""])[0]
+
+        manifest_url = ""
+        items = []
+        if raw_r:
+            try:
+                request_data = json.loads(raw_r)
+                manifest_url = request_data.get("manifestUrl", "")
+                items = request_data.get("items", [])
+            except Exception as e:
+                return jsonify({"success": False, "error": f"Failed to parse 'r' parameter payload: {str(e)}"}), 400
+
+        return jsonify({
+            "success": True,
+            "parsed": {
+                "version": version,
+                "id": client_id,
+                "trace_id": trace_id,
+                "return_url": return_url,
+                "manifest_url": manifest_url,
+                "items": items,
+                "ton_address": ton_address,
+                "host": parsed_url.netloc,
+                "scheme": parsed_url.scheme
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Invalid endpoint URL: {str(e)}"}), 400
+
+@app.route("/api/tonconnect/connect", methods=["POST"])
+def connect_tonconnect():
+    data = request.get_json(silent=True) or {}
+    client_id = data.get("id")
+    wallet_address = data.get("wallet_address", "EQD_simulated_wallet_address_12345")
+    manifest_url = data.get("manifest_url", "")
+
+    if not client_id:
+        return jsonify({"success": False, "error": "Client ID (id) is required"}), 400
+
+    session_id = "tc_session_" + os.urandom(8).hex()
+
+    return jsonify({
+        "success": True,
+        "message": "TON Connect session established successfully",
+        "session_id": session_id,
+        "client_id": client_id,
+        "wallet_address": wallet_address,
+        "manifest_url": manifest_url,
+        "status": "connected"
+    }), 200
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

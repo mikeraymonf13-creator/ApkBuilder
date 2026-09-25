@@ -195,6 +195,7 @@
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('tonTab', this)">TON Transfer</button>
       <button class="tab-btn" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button class="tab-btn" onclick="switchTab('tonConnectTab', this)">TON Connect</button>
     </div>
 
     <!-- TON Tab -->
@@ -239,6 +240,30 @@
         <button type="submit" class="btn-submit">Send Jetton</button>
       </form>
       <div id="jettonStatus" class="status-card"></div>
+    </div>
+
+    <!-- TON Connect Tab -->
+    <div id="tonConnectTab" class="tab-content">
+      <form id="tonConnectForm" onsubmit="handleTonConnectParse(event)">
+        <div class="form-group">
+          <label for="tonConnectUrl">TON Connect Endpoint URL</label>
+          <input type="text" id="tonConnectUrl" placeholder="https://connect.gramwallet.io/?v=2&id=..." required>
+        </div>
+        <button type="submit" class="btn-submit">Parse Endpoint</button>
+      </form>
+      <div id="tonConnectStatus" class="status-card"></div>
+      <div id="tonConnectDetails" style="display:none; margin-top:16px; background-color:#0f172a; padding:16px; border-radius:8px; border:1px solid var(--border-color);">
+        <h3 style="font-size:1.05rem; margin-bottom:12px; color:#38bdf8;">Parsed Endpoint Details</h3>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Host:</strong> <span id="tcHost"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;" id="tcTonAddressRow" style="display:none;"><strong>TON Address:</strong> <span id="tcTonAddress" style="word-break:break-all;"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Version:</strong> <span id="tcVersion"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Client ID:</strong> <span id="tcClientId" style="word-break:break-all;"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Trace ID:</strong> <span id="tcTraceId"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Manifest URL:</strong> <a id="tcManifestUrl" href="#" target="_blank" style="color:#38bdf8; word-break:break-all;"></a></p>
+        <p style="font-size:0.85rem; margin-bottom:6px;"><strong>Return URL:</strong> <span id="tcReturnUrl" style="word-break:break-all;"></span></p>
+        <p style="font-size:0.85rem; margin-bottom:12px;"><strong>Requested Items:</strong> <pre id="tcItems" style="background:#1e293b; padding:8px; border-radius:6px; font-size:0.8rem; overflow-x:auto;"></pre></p>
+        <button type="button" class="btn-submit" style="background-color:#22c55e;" onclick="handleTonConnectEstablish()">Simulate Wallet Connection</button>
+      </div>
     </div>
   </div>
 
@@ -298,6 +323,85 @@
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.innerHTML = `<strong>Error:</strong> ${result.error || 'Failed to send TON'}`;
+        }
+      } catch (err) {
+        statusDiv.className = 'status-card error';
+        statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      }
+    }
+
+    let currentParsedData = null;
+
+    async function handleTonConnectParse(event) {
+      event.preventDefault();
+      const statusDiv = document.getElementById('tonConnectStatus');
+      const detailsDiv = document.getElementById('tonConnectDetails');
+      statusDiv.className = 'status-card';
+      statusDiv.style.display = 'none';
+      detailsDiv.style.display = 'none';
+      currentParsedData = null;
+
+      const url = document.getElementById('tonConnectUrl').value;
+
+      try {
+        const response = await fetch('/api/tonconnect/parse', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          currentParsedData = result.parsed;
+          document.getElementById('tcHost').textContent = result.parsed.host || 'N/A';
+          if (result.parsed.ton_address) {
+            document.getElementById('tcTonAddress').textContent = result.parsed.ton_address;
+            document.getElementById('tcTonAddressRow').style.display = 'block';
+          } else {
+            document.getElementById('tcTonAddressRow').style.display = 'none';
+          }
+          document.getElementById('tcVersion').textContent = result.parsed.version || 'N/A';
+          document.getElementById('tcClientId').textContent = result.parsed.id || 'N/A';
+          document.getElementById('tcTraceId').textContent = result.parsed.trace_id || 'N/A';
+
+          const manifestElem = document.getElementById('tcManifestUrl');
+          manifestElem.textContent = result.parsed.manifest_url || 'N/A';
+          manifestElem.href = result.parsed.manifest_url || '#';
+
+          document.getElementById('tcReturnUrl').textContent = result.parsed.return_url || 'N/A';
+          document.getElementById('tcItems').textContent = JSON.stringify(result.parsed.items, null, 2);
+
+          detailsDiv.style.display = 'block';
+        } else {
+          statusDiv.className = 'status-card error';
+          statusDiv.innerHTML = `<strong>Error:</strong> ${result.error || 'Failed to parse endpoint URL'}`;
+        }
+      } catch (err) {
+        statusDiv.className = 'status-card error';
+        statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      }
+    }
+
+    async function handleTonConnectEstablish() {
+      if (!currentParsedData) return;
+      const statusDiv = document.getElementById('tonConnectStatus');
+
+      try {
+        const response = await fetch('/api/tonconnect/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: currentParsedData.id,
+            manifest_url: currentParsedData.manifest_url,
+            wallet_address: 'EQD_simulated_wallet_address_12345'
+          })
+        });
+        const result = await response.json();
+        if (response.ok && result.success) {
+          statusDiv.className = 'status-card success';
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Session ID: ${result.session_id}</small><br><small>Connected Address: ${result.wallet_address}</small>`;
+        } else {
+          statusDiv.className = 'status-card error';
+          statusDiv.innerHTML = `<strong>Error:</strong> ${result.error || 'Failed to establish connection'}`;
         }
       } catch (err) {
         statusDiv.className = 'status-card error';
