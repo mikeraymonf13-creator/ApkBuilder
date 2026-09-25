@@ -6,6 +6,7 @@
   <title>BorderP45 - TON & Jetton Portal</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#0088cc">
+  <script src="https://unpkg.com/@tonconnect/ui@3.0.0/dist/tonconnect-ui.min.js"></script>
   <style>
     :root {
       --bg-color: #0f172a;
@@ -45,6 +46,9 @@
     header {
       text-align: center;
       margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     header h1 {
@@ -57,6 +61,10 @@
     header p {
       color: var(--text-muted);
       font-size: 0.95rem;
+    }
+
+    #ton-connect {
+      margin-top: 14px;
     }
 
     .tabs {
@@ -189,6 +197,7 @@
     <header>
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
+      <div id="ton-connect"></div>
       <div id="connectionStatus" class="offline-badge">Checking connection...</div>
     </header>
 
@@ -243,6 +252,11 @@
   </div>
 
   <script>
+    const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: location.origin + '/tonconnect-manifest.json',
+      buttonRootId: 'ton-connect'
+    });
+
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
