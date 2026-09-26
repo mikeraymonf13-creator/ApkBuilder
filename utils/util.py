@@ -27,5 +27,6 @@ def get_bin(cmd):
     return shutil.which(cmd)
 
 def cmd_is_available(cmd):
-    isa = os.system(f"which {cmd} > /dev/null") == 0
-    return isa
+    # BOLT OPTIMIZATION: Avoid spawning shell processes via os.system("which ...").
+    # shutil.which provides a direct Python PATH check without process creation overhead.
+    return shutil.which(cmd) is not None
