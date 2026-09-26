@@ -104,5 +104,26 @@ android:
         result = proj.find_files(nonexistent, ".java")
         self.assertEqual(result, [])
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_java_files(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        sub_dir = os.path.join(self.project_dir, "src", "java", "com", "example")
+        os.makedirs(sub_dir, exist_ok=True)
+        file1 = os.path.join(self.project_dir, "src", "java", "Main.java")
+        file2 = os.path.join(sub_dir, "Utils.java")
+        file3 = os.path.join(sub_dir, "README.txt")
+
+        with open(file1, "w") as f:
+            f.write("// Main")
+        with open(file2, "w") as f:
+            f.write("// Utils")
+        with open(file3, "w") as f:
+            f.write("readme")
+
+        java_files = proj.find_java_files()
+        self.assertEqual(sorted(java_files), sorted([file1, file2]))
+
 if __name__ == "__main__":
     unittest.main()
