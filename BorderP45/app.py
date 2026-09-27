@@ -22,6 +22,12 @@ def manifest():
     response.headers["Content-Type"] = "application/manifest+json"
     return response
 
+@app.route("/tonconnect-manifest.json")
+def tonconnect_manifest():
+    response = send_from_directory(PUBLIC_DIR, "tonconnect-manifest.json")
+    response.headers["Content-Type"] = "application/json"
+    return response
+
 @app.route("/<path:filename>")
 def static_files(filename):
     return send_from_directory(PUBLIC_DIR, filename)

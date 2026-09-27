@@ -25,6 +25,13 @@ def test_borderp45_routes():
     assert res_manifest.status_code == 200
     assert 'json' in res_manifest.content_type
 
+    # Test tonconnect-manifest.json route
+    res_tc_manifest = client.get('/tonconnect-manifest.json')
+    assert res_tc_manifest.status_code == 200
+    assert 'json' in res_tc_manifest.content_type
+    tc_data = json.loads(res_tc_manifest.data)
+    assert tc_data['name'] == 'BorderP45 TON Wallet'
+
     # Test TON transfer API route
     res_ton = client.post('/api/transfer/ton', json={
         'recipient': 'EQD123',
