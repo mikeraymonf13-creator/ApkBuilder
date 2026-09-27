@@ -104,5 +104,61 @@ android:
         result = proj.find_files(nonexistent, ".java")
         self.assertEqual(result, [])
 
+    @patch("utils.util.get_bin", return_value=None)
+    @patch("os.getenv", return_value=None)
+    def test_sdk_and_bin_fallback(self, mock_getenv, mock_get_bin):
+        # Create minimal yml without bins overrides
+        yml_path = os.path.join(self.project_dir, "project.yml")
+        with open(yml_path, "w") as f:
+            f.write("""
+android:
+    sdk-api-version: 34
+    sdk-min-api-version: 21
+    version-code: 1
+    version-name: "1"
+    build-type: debug
+    keystore-path: test.keystore
+    keystore-alias: test
+    keystore-store-pass: pass
+    keystore-key-pass: pass
+""")
+
+        # Mock os.path.exists to simulate /opt/android-sdk and build-tools
+        fake_sdk = "/opt/android-sdk"
+        fake_aapt2 = os.path.join(fake_sdk, "build-tools", "35.0.0", "aapt2")
+
+        orig_exists = os.path.exists
+        orig_isfile = os.path.isfile
+        orig_access = os.access
+        orig_listdir = os.listdir
+
+        def custom_exists(path):
+            if path == fake_sdk or path == os.path.join(fake_sdk, "build-tools"):
+                return True
+            return orig_exists(path)
+
+        def custom_listdir(path):
+            if path == os.path.join(fake_sdk, "build-tools"):
+                return ["35.0.0"]
+            return orig_listdir(path)
+
+        def custom_isfile(path):
+            if path == fake_aapt2:
+                return True
+            return orig_isfile(path)
+
+        def custom_access(path, mode):
+            if path == fake_aapt2:
+                return True
+            return orig_access(path, mode)
+
+        with patch("os.path.exists", side_effect=custom_exists), \
+             patch("os.listdir", side_effect=custom_listdir), \
+             patch("os.path.isfile", side_effect=custom_isfile), \
+             patch("os.access", side_effect=custom_access):
+            proj = Project(self.project_dir)
+            self.assertEqual(proj.sdk_dir, fake_sdk)
+            self.assertEqual(proj.bin_aapt2, fake_aapt2)
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,9 +10,9 @@ class Aapt2Task:
         self.libs_to_compile = []
     
     def prepare(self):
-        aapt2_available = cmd_is_available("aapt2")
+        aapt2_available = cmd_is_available(self.project.bin_aapt2)
         if not aapt2_available:
-            raise Exception("> aapt2 not detected in PATH. Please set it in PATH.")
+            raise Exception("> aapt2 not detected in PATH or SDK build-tools. Please set it in PATH or project configuration.")
         
         get_logger().info("-- Preparing Aapt2")
         self.libs_to_compile = self.project.find_lib_jars()
@@ -27,8 +27,6 @@ class Aapt2Task:
             lib_dir = os.path.dirname(jar)
             lib_name = os.path.basename(lib_dir)
             if os.path.exists(os.path.join(compiled_res_dir, lib_name + ".zip")):
-                # remove the library from the list so it wont get compiled
-                #get_logger().info(f"> :app:removingLibraryToSpeedUp {lib_name}")
                 continue
             filtered_libs.append(os.path.abspath(jar))
         self.libs_to_compile = filtered_libs

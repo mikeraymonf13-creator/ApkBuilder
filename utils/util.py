@@ -27,6 +27,8 @@ def get_bin(cmd):
     return shutil.which(cmd)
 
 def cmd_is_available(cmd):
-    # BOLT OPTIMIZATION: Use shutil.which instead of os.system("which ...")
-    # to avoid subshell process fork overhead (~20x faster) when checking binary availability.
+    if not cmd:
+        return False
+    if os.path.isabs(cmd) or os.sep in cmd:
+        return os.path.isfile(cmd) and os.access(cmd, os.X_OK)
     return shutil.which(cmd) is not None
