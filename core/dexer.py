@@ -9,9 +9,9 @@ class Task:
         self.classpath = []
     
     def prepare(self):
-        d8_available = cmd_is_available("d8")
+        d8_available = cmd_is_available(self.project.bin_d8)
         if not d8_available:
-            raise Exception("-- d8 not detected in PATH. Please set it in PATH.")
+            raise Exception("-- d8 not detected in PATH or SDK build-tools. Please set it in PATH.")
         
         if not os.path.exists(self.project.dex_dir):
             os.makedirs(self.project.dex_dir)

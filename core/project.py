@@ -77,6 +77,8 @@ class Project:
         self._cached_lib_jars = None
         self._cached_lib_package_names = None
 
+        self.sdk_dir = self.__resolve_sdk_path()
+
         self.__config_bin = self.config.get("bins", {})
                 
         self.bin_aapt2 = self.__resolve_bin("aapt2")
@@ -84,8 +86,6 @@ class Project:
         self.bin_kotlinc = self.__resolve_bin("kotlinc")
         self.bin_d8 = self.__resolve_bin("d8")
         self.bin_apksigner = self.__resolve_bin("apksigner")
-        
-        self.sdk_dir = self.__resolve_sdk_path()
     
     def __resolve_sdk_path(self):
         sdk_path = self.config_android.get("sdk-path")
@@ -94,6 +94,12 @@ class Project:
             return sdk_path
 
         sdk_path = os.getenv("ANDROID_SDK") or os.getenv("ANDROID_HOME")
+
+        if not sdk_path:
+            for fallback_path in ["/opt/android-sdk", "/tmp/android-sdk"]:
+                if os.path.exists(fallback_path):
+                    sdk_path = fallback_path
+                    break
 
         if not sdk_path:
             raise Exception("env(ANDROID_SDK) nor env(ANDROID_HOME) are defined.")
@@ -112,7 +118,22 @@ class Project:
             get_logger().info(f"-- no bins:{name} provided. falling back to {fallback}")
             return fallback
         
-        raise Exception(f"-- bin '{name}' not found and no fallback available")
+        if self.sdk_dir and os.path.exists(self.sdk_dir):
+            build_tools_dir = os.path.join(self.sdk_dir, "build-tools")
+            if os.path.exists(build_tools_dir):
+                versions = sorted(os.listdir(build_tools_dir), reverse=True)
+                for v in versions:
+                    candidate = os.path.join(build_tools_dir, v, name)
+                    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                        get_logger().info(f"-- no bins:{name} provided. falling back to {candidate}")
+                        return candidate
+
+            cmdline_candidate = os.path.join(self.sdk_dir, "cmdline-tools", "latest", "bin", name)
+            if os.path.isfile(cmdline_candidate) and os.access(cmdline_candidate, os.X_OK):
+                get_logger().info(f"-- no bins:{name} provided. falling back to {cmdline_candidate}")
+                return cmdline_candidate
+
+        return None
     
     def get_lib_package_names(self):
         # BOLT OPTIMIZATION: Cache library package names to avoid re-scanning
