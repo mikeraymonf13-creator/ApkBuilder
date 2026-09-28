@@ -73,9 +73,10 @@ class Project:
 
         self.view_binding_dir = os.path.join(self.output_dir, "view_binding")
         
-        # Cache for library jars and library package names to avoid redundant os.walk traversals
+        # Cache for library jars, package names, and SDK build-tools versions
         self._cached_lib_jars = None
         self._cached_lib_package_names = None
+        self._build_tools_versions = None
 
         self.sdk_dir = self.__resolve_sdk_path()
 
@@ -121,8 +122,11 @@ class Project:
         if self.sdk_dir and os.path.exists(self.sdk_dir):
             build_tools_dir = os.path.join(self.sdk_dir, "build-tools")
             if os.path.exists(build_tools_dir):
-                versions = sorted(os.listdir(build_tools_dir), reverse=True)
-                for v in versions:
+                # BOLT OPTIMIZATION: Cache build-tools versions to avoid repeated
+                # os.listdir and sorted calls during resolution of multiple binaries.
+                if self._build_tools_versions is None:
+                    self._build_tools_versions = sorted(os.listdir(build_tools_dir), reverse=True)
+                for v in self._build_tools_versions:
                     candidate = os.path.join(build_tools_dir, v, name)
                     if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                         get_logger().info(f"-- no bins:{name} provided. falling back to {candidate}")
