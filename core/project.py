@@ -73,9 +73,10 @@ class Project:
 
         self.view_binding_dir = os.path.join(self.output_dir, "view_binding")
         
-        # Cache for library jars and library package names to avoid redundant os.walk traversals
+        # Cache for library jars, package names, and build-tools versions
         self._cached_lib_jars = None
         self._cached_lib_package_names = None
+        self._build_tools_versions = None
 
         self.sdk_dir = self.__resolve_sdk_path()
 
@@ -121,8 +122,11 @@ class Project:
         if self.sdk_dir and os.path.exists(self.sdk_dir):
             build_tools_dir = os.path.join(self.sdk_dir, "build-tools")
             if os.path.exists(build_tools_dir):
-                versions = sorted(os.listdir(build_tools_dir), reverse=True)
-                for v in versions:
+                # BOLT OPTIMIZATION: Cache sorted build-tools versions on Project instance
+                # to avoid re-reading and re-sorting build-tools directory up to 5 times.
+                if self._build_tools_versions is None:
+                    self._build_tools_versions = sorted(os.listdir(build_tools_dir), reverse=True)
+                for v in self._build_tools_versions:
                     candidate = os.path.join(build_tools_dir, v, name)
                     if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                         get_logger().info(f"-- no bins:{name} provided. falling back to {candidate}")
@@ -163,11 +167,11 @@ class Project:
             get_logger().error("-- no base dir found")
             return result
         
-        if not os.path.exists(base_dir):
-            return result
-
+        # BOLT OPTIMIZATION: Check os.path.isdir directly to avoid redundant stat calls
+        # (os.path.exists followed by os.path.isdir).
         if not os.path.isdir(base_dir):
-            get_logger().error("-- base dir cannot be file")
+            if os.path.exists(base_dir):
+                get_logger().error("-- base dir cannot be file")
             return result
         
         for root, _, files in os.walk(base_dir):
