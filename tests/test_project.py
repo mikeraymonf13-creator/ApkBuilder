@@ -160,5 +160,63 @@ android:
             self.assertEqual(proj.sdk_dir, fake_sdk)
             self.assertEqual(proj.bin_aapt2, fake_aapt2)
 
+    @patch("utils.util.get_bin", return_value=None)
+    @patch("os.getenv", return_value=None)
+    def test_build_tools_versions_caching(self, mock_getenv, mock_get_bin):
+        yml_path = os.path.join(self.project_dir, "project.yml")
+        with open(yml_path, "w") as f:
+            f.write("""
+android:
+    sdk-api-version: 34
+    sdk-min-api-version: 21
+    version-code: 1
+    version-name: "1"
+    build-type: debug
+    keystore-path: test.keystore
+    keystore-alias: test
+    keystore-store-pass: pass
+    keystore-key-pass: pass
+""")
+
+        fake_sdk = "/opt/android-sdk"
+        build_tools_dir = os.path.join(fake_sdk, "build-tools")
+
+        listdir_call_count = [0]
+
+        orig_exists = os.path.exists
+        orig_isfile = os.path.isfile
+        orig_access = os.access
+        orig_listdir = os.listdir
+
+        def custom_exists(path):
+            if path == fake_sdk or path == build_tools_dir:
+                return True
+            return orig_exists(path)
+
+        def custom_listdir(path):
+            if path == build_tools_dir:
+                listdir_call_count[0] += 1
+                return ["35.0.0", "34.0.0"]
+            return orig_listdir(path)
+
+        def custom_isfile(path):
+            if path.startswith(build_tools_dir):
+                return True
+            return orig_isfile(path)
+
+        def custom_access(path, mode):
+            if path.startswith(build_tools_dir):
+                return True
+            return orig_access(path, mode)
+
+        with patch("os.path.exists", side_effect=custom_exists), \
+             patch("os.listdir", side_effect=custom_listdir), \
+             patch("os.path.isfile", side_effect=custom_isfile), \
+             patch("os.access", side_effect=custom_access):
+            proj = Project(self.project_dir)
+            self.assertEqual(proj._build_tools_versions, ["35.0.0", "34.0.0"])
+            # build_tools_dir should be listed only once during initialization of all 5 binaries
+            self.assertEqual(listdir_call_count[0], 1)
+
 if __name__ == "__main__":
     unittest.main()
