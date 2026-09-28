@@ -159,6 +159,24 @@ android:
             proj = Project(self.project_dir)
             self.assertEqual(proj.sdk_dir, fake_sdk)
             self.assertEqual(proj.bin_aapt2, fake_aapt2)
+            self.assertEqual(proj._build_tools_versions, ["35.0.0"])
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_dexer_classpath_caching(self, mock_getenv, mock_get_bin):
+        from core.dexer import Task as DexerTask
+        proj = Project(self.project_dir)
+
+        task = DexerTask(proj)
+        self.assertIsNone(task.classpath)
+
+        # Calling __get_classpath populates self.classpath list
+        classpath1 = task._Task__get_classpath()
+        self.assertIsNotNone(task.classpath)
+
+        # Subsequent call returns cached self.classpath
+        classpath2 = task._Task__get_classpath()
+        self.assertIs(classpath1, classpath2)
 
 if __name__ == "__main__":
     unittest.main()
