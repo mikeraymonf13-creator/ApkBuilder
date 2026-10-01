@@ -3,6 +3,7 @@ import os
 import subprocess
 import logging
 import shutil
+import functools
 
 handler = logging.StreamHandler()
 handler.setFormatter(ColorFormatter(
@@ -26,6 +27,10 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache binary path lookup results using lru_cache.
+# During build execution, tasks (Aapt2Task, JavaTask, KotlinTask, Task/D8, Task/ApkSigner)
+# check executable availability repeatedly. Caching avoids redundant shutil.which and os.access filesystem calls.
+@functools.lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
