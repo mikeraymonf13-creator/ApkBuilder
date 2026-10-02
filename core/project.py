@@ -199,10 +199,16 @@ class Project:
         self._cached_lib_jars = jars
         return list(self._cached_lib_jars)
     
-    def find_dex_files(self):
+    def find_dex_files(self, target_dir=None):
+        # BOLT OPTIMIZATION: Avoid recursive os.walk traversals when locating .dex files.
+        # D8 outputs dex files directly into top-level directories, so os.listdir
+        # is significantly faster and skips scanning deep resource folders (res/).
+        target_dir = target_dir if target_dir is not None else self.dex_dir
+        if not target_dir or not os.path.exists(target_dir) or not os.path.isdir(target_dir):
+            return []
         return [
-            os.path.join(self.dex_dir, f)
-            for f in os.listdir(self.dex_dir)
+            os.path.join(target_dir, f)
+            for f in sorted(os.listdir(target_dir))
             if f.endswith(".dex")
         ]
     
