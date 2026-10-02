@@ -135,6 +135,11 @@
       border-color: var(--accent-color);
     }
 
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 2px;
+    }
+
     button.btn-submit {
       width: 100%;
       padding: 14px;
@@ -145,12 +150,17 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, opacity 0.2s;
       margin-top: 8px;
     }
 
-    button.btn-submit:hover {
+    button.btn-submit:hover:not(:disabled) {
       background-color: var(--accent-hover);
+    }
+
+    button.btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
 
     .status-card {
@@ -201,13 +211,13 @@
       <div id="connectionStatus" class="offline-badge">Checking connection...</div>
     </header>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+    <div class="tabs" role="tablist" aria-label="Transfer type">
+      <button id="tonTabBtn" role="tab" aria-selected="true" aria-controls="tonTab" class="tab-btn active" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button id="jettonTabBtn" role="tab" aria-selected="false" aria-controls="jettonTab" class="tab-btn" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
     </div>
 
     <!-- TON Tab -->
-    <div id="tonTab" class="tab-content active">
+    <div id="tonTab" role="tabpanel" aria-labelledby="tonTabBtn" class="tab-content active">
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
@@ -223,11 +233,11 @@
         </div>
         <button type="submit" class="btn-submit">Send TON</button>
       </form>
-      <div id="tonStatus" class="status-card"></div>
+      <div id="tonStatus" class="status-card" aria-live="polite"></div>
     </div>
 
     <!-- Jetton Tab -->
-    <div id="jettonTab" class="tab-content">
+    <div id="jettonTab" role="tabpanel" aria-labelledby="jettonTabBtn" class="tab-content">
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
@@ -247,7 +257,7 @@
         </div>
         <button type="submit" class="btn-submit">Send Jetton</button>
       </form>
-      <div id="jettonStatus" class="status-card"></div>
+      <div id="jettonStatus" class="status-card" aria-live="polite"></div>
     </div>
   </div>
 
@@ -259,10 +269,14 @@
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
+      btnElement.setAttribute('aria-selected', 'true');
     }
 
     function updateOnlineStatus() {
@@ -291,6 +305,10 @@
 
     async function handleTonTransfer(event) {
       event.preventDefault();
+      const form = event.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.textContent;
+
       const statusDiv = document.getElementById('tonStatus');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
@@ -298,6 +316,9 @@
       const recipient = document.getElementById('tonRecipient').value;
       const amount = document.getElementById('tonAmount').value;
       const comment = document.getElementById('tonComment').value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending TON...';
 
       try {
         const response = await fetch('/api/transfer/ton', {
@@ -316,11 +337,18 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
       }
     }
 
     async function handleJettonTransfer(event) {
       event.preventDefault();
+      const form = event.target;
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.textContent;
+
       const statusDiv = document.getElementById('jettonStatus');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
@@ -329,6 +357,9 @@
       const recipient = document.getElementById('jettonRecipient').value;
       const amount = document.getElementById('jettonAmount').value;
       const comment = document.getElementById('jettonComment').value;
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending Jetton...';
 
       try {
         const response = await fetch('/api/transfer/jetton', {
@@ -347,6 +378,9 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
       }
     }
   </script>

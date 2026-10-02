@@ -1,0 +1,3 @@
+## 2025-05-18 - Accessible Tab Components & Submit Loading Feedback
+**Learning:** Single Page Applications with custom tabs often lack ARIA tab attributes (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `role="tabpanel"`, `aria-labelledby`) and live regions (`aria-live="polite"`), preventing screen readers from perceiving tab state changes or dynamic status feedback.
+**Action:** When working on HTML tab interfaces, always pair visual CSS active states with dynamic `aria-selected` toggles and ensure async form submit buttons visually disable and change text during fetch calls to prevent duplicate submissions and provide immediate user feedback.
