@@ -1,4 +1,5 @@
 from utils.color_formatter import ColorFormatter
+import functools
 import os
 import subprocess
 import logging
@@ -23,10 +24,14 @@ def run(cmd):
 def get_logger():
     return log
 
+@functools.lru_cache(maxsize=128)
 def get_bin(cmd):
+    # BOLT OPTIMIZATION: Cache binary resolution to avoid repeating expensive PATH scans via shutil.which.
     return shutil.which(cmd)
 
+@functools.lru_cache(maxsize=128)
 def cmd_is_available(cmd):
+    # BOLT OPTIMIZATION: Cache binary availability checks to avoid redundant filesystem checks (os.access / shutil.which).
     if not cmd:
         return False
     if os.path.isabs(cmd) or os.sep in cmd:
