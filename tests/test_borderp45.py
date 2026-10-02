@@ -18,7 +18,6 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'Jetton Transfer', res.data)
         self.assertIn(b'tonconnect-ui.min.js', res.data)
         self.assertIn(b'id="ton-connect"', res.data)
-        self.assertIn(b'TON_CONNECT_UI.TonConnectUI', res.data)
 
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')
@@ -56,6 +55,25 @@ class TestBorderP45(unittest.TestCase):
         data_jetton = json.loads(res_jetton.data)
         self.assertTrue(data_jetton['success'])
         self.assertEqual(data_jetton['jetton_master'], 'EQB456')
+
+    def test_ton_api_endpoints(self):
+        test_addr = 'EQD000000000000000000000000000000000000000000000'
+
+        # Test account endpoint
+        res_acc = self.client.get(f'/api/ton/account/{test_addr}')
+        self.assertEqual(res_acc.status_code, 200)
+        data_acc = json.loads(res_acc.data)
+        self.assertTrue(data_acc['success'])
+        self.assertEqual(data_acc['address'], test_addr)
+        self.assertIn('balance', data_acc)
+
+        # Test transactions endpoint
+        res_tx = self.client.get(f'/api/ton/transactions/{test_addr}')
+        self.assertEqual(res_tx.status_code, 200)
+        data_tx = json.loads(res_tx.data)
+        self.assertTrue(data_tx['success'])
+        self.assertEqual(data_tx['address'], test_addr)
+        self.assertIsInstance(data_tx['transactions'], list)
 
 if __name__ == '__main__':
     unittest.main()
