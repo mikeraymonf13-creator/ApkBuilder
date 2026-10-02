@@ -50,7 +50,9 @@ class Task:
             dex_index = len(dex_files) + 1
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
-                library_dex_files = self.project.find_files(library_dir, ".dex")
+                # BOLT OPTIMIZATION: Use find_dex_files(library_dir) to check top-level .dex
+                # files without recursively scanning library subdirectories (such as res/).
+                library_dex_files = self.project.find_dex_files(library_dir)
                 if not library_dex_files:
                     continue
                 

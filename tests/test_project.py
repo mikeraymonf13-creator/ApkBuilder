@@ -104,6 +104,40 @@ android:
         result = proj.find_files(nonexistent, ".java")
         self.assertEqual(result, [])
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_dex_files(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # 1. Nonexistent directory should return empty list
+        nonexistent = os.path.join(self.project_dir, "nonexistent")
+        self.assertEqual(proj.find_dex_files(nonexistent), [])
+
+        # 2. Custom target directory with .dex and subdirectories
+        custom_dir = os.path.join(self.project_dir, "custom_lib")
+        res_dir = os.path.join(custom_dir, "res", "layout")
+        os.makedirs(res_dir, exist_ok=True)
+
+        dex_path = os.path.join(custom_dir, "classes.dex")
+        with open(dex_path, "w") as f:
+            f.write("dex data")
+
+        # Create a non-dex file
+        with open(os.path.join(custom_dir, "AndroidManifest.xml"), "w") as f:
+            f.write("xml data")
+
+        found_dex = proj.find_dex_files(custom_dir)
+        self.assertEqual(found_dex, [dex_path])
+
+        # 3. Default target directory (proj.dex_dir)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        default_dex_path = os.path.join(proj.dex_dir, "classes.dex")
+        with open(default_dex_path, "w") as f:
+            f.write("default dex data")
+
+        found_default_dex = proj.find_dex_files()
+        self.assertEqual(found_default_dex, [default_dex_path])
+
     @patch("utils.util.get_bin", return_value=None)
     @patch("os.getenv", return_value=None)
     def test_sdk_and_bin_fallback(self, mock_getenv, mock_get_bin):
