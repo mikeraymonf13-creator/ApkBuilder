@@ -3,6 +3,7 @@ import os
 import subprocess
 import logging
 import shutil
+from functools import lru_cache
 
 handler = logging.StreamHandler()
 handler.setFormatter(ColorFormatter(
@@ -23,9 +24,15 @@ def run(cmd):
 def get_logger():
     return log
 
+# BOLT OPTIMIZATION: Cache binary resolution to avoid redundant PATH searches
+# across multiple build tasks (Aapt2, Javac, Kotlinc, D8, Apksigner).
+@lru_cache(maxsize=64)
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache command availability checks to eliminate repeated
+# filesystem stat/access system calls during build execution.
+@lru_cache(maxsize=64)
 def cmd_is_available(cmd):
     if not cmd:
         return False
