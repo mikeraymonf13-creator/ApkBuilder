@@ -23,9 +23,15 @@ def run(cmd):
 def get_logger():
     return log
 
+from functools import lru_cache
+
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache command availability results using lru_cache
+# to prevent repeated redundant PATH lookups via shutil.which() and
+# os.path / os.access filesystem stats during project init and build execution.
+@lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
