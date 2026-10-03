@@ -159,6 +159,7 @@ android:
             proj = Project(self.project_dir)
             self.assertEqual(proj.sdk_dir, fake_sdk)
             self.assertEqual(proj.bin_aapt2, fake_aapt2)
+            self.assertEqual(proj._build_tools_versions, ["35.0.0"])
 
 if __name__ == "__main__":
     unittest.main()
