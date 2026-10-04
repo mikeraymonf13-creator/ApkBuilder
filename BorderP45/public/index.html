@@ -168,6 +168,16 @@
       background-color: var(--accent-hover);
     }
 
+    .tab-btn:focus-visible, button.btn-submit:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 2px;
+    }
+
+    button.btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .status-card {
       margin-top: 20px;
       padding: 14px;
@@ -233,14 +243,14 @@
       <div id="walletBalance" class="balance-display">— TON</div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
-      <button class="tab-btn" onclick="switchTab('activityTab', this)">Activity</button>
+    <div class="tabs" role="tablist" aria-label="Transfer type selection">
+      <button id="tab-tonTab" class="tab-btn active" role="tab" aria-selected="true" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button id="tab-jettonTab" class="tab-btn" role="tab" aria-selected="false" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button id="tab-activityTab" class="tab-btn" role="tab" aria-selected="false" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
     </div>
 
     <!-- TON Tab -->
-    <div id="tonTab" class="tab-content active">
+    <div id="tonTab" class="tab-content active" role="tabpanel" aria-labelledby="tab-tonTab">
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
@@ -260,7 +270,7 @@
     </div>
 
     <!-- Jetton Tab -->
-    <div id="jettonTab" class="tab-content">
+    <div id="jettonTab" class="tab-content" role="tabpanel" aria-labelledby="tab-jettonTab">
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
@@ -284,7 +294,7 @@
     </div>
 
     <!-- Activity Tab -->
-    <div id="activityTab" class="tab-content">
+    <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activityTab">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
       <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
     </div>
@@ -298,10 +308,14 @@
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
+      btnElement.setAttribute('aria-selected', 'true');
     }
 
     function updateOnlineStatus() {
@@ -371,9 +385,15 @@
 
     async function handleTonTransfer(event) {
       event.preventDefault();
+      const submitBtn = event.target.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.textContent;
+
       const statusDiv = document.getElementById('tonStatus');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
 
       const recipient = document.getElementById('tonRecipient').value;
       const amount = document.getElementById('tonAmount').value;
@@ -396,14 +416,23 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
       }
     }
 
     async function handleJettonTransfer(event) {
       event.preventDefault();
+      const submitBtn = event.target.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.textContent;
+
       const statusDiv = document.getElementById('jettonStatus');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
 
       const jettonMaster = document.getElementById('jettonMaster').value;
       const recipient = document.getElementById('jettonRecipient').value;
@@ -427,6 +456,9 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
       }
     }
   </script>
