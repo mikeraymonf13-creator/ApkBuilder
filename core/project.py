@@ -1,6 +1,7 @@
 from utils.util import get_logger, get_bin
 import xml.etree.ElementTree as ET
 import os
+import stat
 import yaml
 
 class Project:
@@ -167,11 +168,15 @@ class Project:
             get_logger().error("-- no base dir found")
             return result
         
-        # BOLT OPTIMIZATION: Check os.path.isdir directly to avoid redundant stat calls
-        # (os.path.exists followed by os.path.isdir).
-        if not os.path.isdir(base_dir):
-            if os.path.exists(base_dir):
+        # BOLT OPTIMIZATION: Use os.stat inside try-except block to inspect
+        # base_dir in a single stat syscall, avoiding redundant stat calls
+        # (e.g. os.path.isdir followed by os.path.exists) for non-existent paths.
+        try:
+            st = os.stat(base_dir)
+            if not stat.S_ISDIR(st.st_mode):
                 get_logger().error("-- base dir cannot be file")
+                return result
+        except OSError:
             return result
         
         for root, _, files in os.walk(base_dir):
