@@ -104,10 +104,12 @@ class Aapt2Task:
             args += ["-A", assets_dir]
         
         #add compiled res
-        for f in os.listdir(compiled_res_dir):
-            full = os.path.join(compiled_res_dir, f)
-            if f.endswith(".zip"):
-                args += ["-R", full]
+        # BOLT OPTIMIZATION: Use os.scandir to avoid os.listdir list creation and os.path.join calls
+        if os.path.isdir(compiled_res_dir):
+            with os.scandir(compiled_res_dir) as entries:
+                for entry in entries:
+                    if entry.is_file() and entry.name.endswith(".zip"):
+                        args += ["-R", entry.path]
         
         #use to gen R.java for used libraries
         extra_packages = self.project.get_lib_package_names()

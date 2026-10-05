@@ -216,21 +216,23 @@ class Project:
         ]
     
     def find_native_libs(self):
+        # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.isdir/join
+        # to avoid redundant stat() syscalls and string concatenations per file/dir entry.
         libs = []
     
-        if not self.native_libs_dir:
+        if not self.native_libs_dir or not os.path.isdir(self.native_libs_dir):
             return libs
 
-        if not os.path.isdir(self.native_libs_dir):
-            return libs
-
-        for abi in os.listdir(self.native_libs_dir):
-            abi_dir = os.path.join(self.native_libs_dir, abi)
-            if not os.path.isdir(abi_dir):
-                continue
-
-            for f in os.listdir(abi_dir):
-                if f.endswith(".so"):
-                    libs.append((abi, os.path.join(abi_dir, f)))
+        try:
+            with os.scandir(self.native_libs_dir) as abi_entries:
+                for abi_entry in abi_entries:
+                    if abi_entry.is_dir():
+                        abi = abi_entry.name
+                        with os.scandir(abi_entry.path) as lib_entries:
+                            for lib_entry in lib_entries:
+                                if lib_entry.is_file() and lib_entry.name.endswith(".so"):
+                                    libs.append((abi, lib_entry.path))
+        except OSError:
+            pass
 
         return libs

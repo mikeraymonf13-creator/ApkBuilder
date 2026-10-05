@@ -178,5 +178,61 @@ android:
         classpath2 = task._Task__get_classpath()
         self.assertIs(classpath1, classpath2)
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_native_libs(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Before creating native libs directory, find_native_libs returns empty list
+        self.assertEqual(proj.find_native_libs(), [])
+
+        # Create arm64-v8a and armeabi-v7a native libraries
+        arm64_dir = os.path.join(proj.native_libs_dir, "arm64-v8a")
+        os.makedirs(arm64_dir, exist_ok=True)
+        so_file = os.path.join(arm64_dir, "libexample.so")
+        with open(so_file, "w") as f:
+            f.write("dummy so file")
+
+        libs = proj.find_native_libs()
+        self.assertEqual(len(libs), 1)
+        abi, path = libs[0]
+        self.assertEqual(abi, "arm64-v8a")
+        self.assertEqual(path, so_file)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_view_binding_generator(self, mock_getenv, mock_get_bin):
+        from core.binding.generator import GenerateViewBinding
+        proj = Project(self.project_dir)
+
+        # When layout directory does not exist, GenerateViewBinding.start should return gracefully
+        gen_task = GenerateViewBinding(proj)
+        gen_task.start()
+
+        # Create layout directory and a sample layout XML file
+        layout_dir = os.path.join(proj.res_dir, "layout")
+        os.makedirs(layout_dir, exist_ok=True)
+        xml_content = """<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <TextView
+        android:id="@+id/title_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</LinearLayout>"""
+        with open(os.path.join(layout_dir, "activity_main.xml"), "w") as f:
+            f.write(xml_content)
+
+        gen_task.start()
+
+        expected_binding_file = os.path.join(
+            proj.view_binding_dir,
+            "com", "example", "test", "databinding",
+            "ActivityMainBinding.java"
+        )
+        self.assertTrue(os.path.isfile(expected_binding_file))
+
 if __name__ == "__main__":
     unittest.main()
