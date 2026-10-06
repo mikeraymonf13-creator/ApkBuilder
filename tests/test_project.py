@@ -234,5 +234,30 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_dex_files(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Before creating dex directory, find_dex_files returns empty list safely without error
+        self.assertEqual(proj.find_dex_files(), [])
+
+        # Create dex directory and add dummy .dex and non-.dex files
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        classes_dex = os.path.join(proj.dex_dir, "classes.dex")
+        classes2_dex = os.path.join(proj.dex_dir, "classes2.dex")
+        other_file = os.path.join(proj.dex_dir, "other.txt")
+
+        with open(classes_dex, "w") as f:
+            f.write("dex1")
+        with open(classes2_dex, "w") as f:
+            f.write("dex2")
+        with open(other_file, "w") as f:
+            f.write("other")
+
+        dex_files = proj.find_dex_files()
+        self.assertEqual(len(dex_files), 2)
+        self.assertEqual(dex_files, sorted([classes_dex, classes2_dex]))
+
 if __name__ == "__main__":
     unittest.main()
