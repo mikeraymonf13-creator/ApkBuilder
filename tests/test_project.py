@@ -180,6 +180,28 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_dex_files(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Before dex_dir is created, find_dex_files returns empty list
+        self.assertEqual(proj.find_dex_files(), [])
+
+        # Create dex_dir with a .dex file and a non-dex file
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        dex_file = os.path.join(proj.dex_dir, "classes.dex")
+        with open(dex_file, "w") as f:
+            f.write("dummy dex file")
+
+        other_file = os.path.join(proj.dex_dir, "classes.txt")
+        with open(other_file, "w") as f:
+            f.write("dummy txt file")
+
+        dex_files = proj.find_dex_files()
+        self.assertEqual(len(dex_files), 1)
+        self.assertEqual(dex_files[0], dex_file)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_find_native_libs(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 
