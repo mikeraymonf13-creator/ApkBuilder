@@ -32,16 +32,16 @@ class Aapt2Task:
         self.libs_to_compile = filtered_libs
         
         if os.path.isdir(bin_dir):
-            for child in os.listdir(bin_dir):
-                if child == "res":
-                    continue
-                
-                path = os.path.join(bin_dir, child)
-                
-                if os.path.isdir(path):
-                    shutil.rmtree(path)
-                else:
-                    os.remove(path)
+            # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.join/isdir
+            # to avoid stat syscalls and string concatenations during bin_dir cleanup.
+            with os.scandir(bin_dir) as entries:
+                for entry in entries:
+                    if entry.name == "res":
+                        continue
+                    if entry.is_dir():
+                        shutil.rmtree(entry.path)
+                    else:
+                        os.remove(entry.path)
         
         os.makedirs(bin_dir, exist_ok=True)
         os.makedirs(gen_dir, exist_ok=True)

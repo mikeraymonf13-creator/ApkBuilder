@@ -209,11 +209,19 @@ class Project:
         return list(self._cached_lib_jars)
     
     def find_dex_files(self):
-        return [
-            os.path.join(self.dex_dir, f)
-            for f in os.listdir(self.dex_dir)
-            if f.endswith(".dex")
-        ]
+        # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.join
+        # to leverage directory entry metadata and avoid extra stat syscalls and string concatenations.
+        if not os.path.isdir(self.dex_dir):
+            return []
+        try:
+            with os.scandir(self.dex_dir) as entries:
+                return [
+                    entry.path
+                    for entry in entries
+                    if entry.is_file() and entry.name.endswith(".dex")
+                ]
+        except OSError:
+            return []
     
     def find_native_libs(self):
         # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.isdir/join
