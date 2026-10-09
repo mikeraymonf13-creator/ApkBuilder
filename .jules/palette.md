@@ -1,0 +1,3 @@
+## 2026-10-09 - Accessible Tab Navigation & Live Status Regions
+**Learning:** Tabbed interfaces in vanilla HTML/JS applications often lack WAI-ARIA tab semantics (`role="tablist"`, `role="tab"`, `aria-selected`, `role="tabpanel"`), preventing screen reader users from identifying active tabs. Additionally, dynamic status response containers need `role="status"` and `aria-live="polite"` so state updates (like transfer results or online status) are immediately announced to assistive technologies.
+**Action:** Always complement JS tab switching logic with `aria-selected` attribute updates, link panels with `aria-controls` and `aria-labelledby`, and ensure dynamic feedback areas use `aria-live="polite"`.

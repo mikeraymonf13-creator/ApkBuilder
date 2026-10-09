@@ -18,6 +18,10 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'Jetton Transfer', res.data)
         self.assertIn(b'tonconnect-ui.min.js', res.data)
         self.assertIn(b'id="ton-connect"', res.data)
+        self.assertIn(b'role="tablist"', res.data)
+        self.assertIn(b'role="tab"', res.data)
+        self.assertIn(b'role="tabpanel"', res.data)
+        self.assertIn(b'aria-live="polite"', res.data)
 
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')

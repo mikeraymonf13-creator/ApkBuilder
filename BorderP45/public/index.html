@@ -225,7 +225,7 @@
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
       <div id="ton-connect"></div>
-      <div id="connectionStatus" class="offline-badge">Checking connection...</div>
+      <div id="connectionStatus" class="offline-badge" role="status" aria-live="polite">Checking connection...</div>
     </header>
 
     <div class="wallet-card">
@@ -233,14 +233,14 @@
       <div id="walletBalance" class="balance-display">— TON</div>
     </div>
 
-    <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
-      <button class="tab-btn" onclick="switchTab('activityTab', this)">Activity</button>
+    <div class="tabs" role="tablist" aria-label="Transfer options">
+      <button id="tab-ton" class="tab-btn active" role="tab" aria-selected="true" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button id="tab-jetton" class="tab-btn" role="tab" aria-selected="false" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button id="tab-activity" class="tab-btn" role="tab" aria-selected="false" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
     </div>
 
     <!-- TON Tab -->
-    <div id="tonTab" class="tab-content active">
+    <div id="tonTab" class="tab-content active" role="tabpanel" aria-labelledby="tab-ton">
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
@@ -254,13 +254,13 @@
           <label for="tonComment">Comment / Payload (Optional)</label>
           <input type="text" id="tonComment" placeholder="Transfer memo">
         </div>
-        <button type="submit" class="btn-submit">Send TON</button>
+        <button type="submit" class="btn-submit" id="tonSubmitBtn">Send TON</button>
       </form>
-      <div id="tonStatus" class="status-card"></div>
+      <div id="tonStatus" class="status-card" role="status" aria-live="polite"></div>
     </div>
 
     <!-- Jetton Tab -->
-    <div id="jettonTab" class="tab-content">
+    <div id="jettonTab" class="tab-content" role="tabpanel" aria-labelledby="tab-jetton">
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
@@ -278,13 +278,13 @@
           <label for="jettonComment">Comment / Payload (Optional)</label>
           <input type="text" id="jettonComment" placeholder="Transfer memo">
         </div>
-        <button type="submit" class="btn-submit">Send Jetton</button>
+        <button type="submit" class="btn-submit" id="jettonSubmitBtn">Send Jetton</button>
       </form>
-      <div id="jettonStatus" class="status-card"></div>
+      <div id="jettonStatus" class="status-card" role="status" aria-live="polite"></div>
     </div>
 
     <!-- Activity Tab -->
-    <div id="activityTab" class="tab-content">
+    <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activity">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
       <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
     </div>
@@ -298,10 +298,14 @@
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
+      btnElement.setAttribute('aria-selected', 'true');
     }
 
     function updateOnlineStatus() {
@@ -372,12 +376,17 @@
     async function handleTonTransfer(event) {
       event.preventDefault();
       const statusDiv = document.getElementById('tonStatus');
+      const submitBtn = document.getElementById('tonSubmitBtn');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
 
       const recipient = document.getElementById('tonRecipient').value;
       const amount = document.getElementById('tonAmount').value;
       const comment = document.getElementById('tonComment').value;
+
+      submitBtn.disabled = true;
+      const origText = submitBtn.textContent;
+      submitBtn.textContent = 'Sending...';
 
       try {
         const response = await fetch('/api/transfer/ton', {
@@ -396,12 +405,16 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = origText;
       }
     }
 
     async function handleJettonTransfer(event) {
       event.preventDefault();
       const statusDiv = document.getElementById('jettonStatus');
+      const submitBtn = document.getElementById('jettonSubmitBtn');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
 
@@ -409,6 +422,10 @@
       const recipient = document.getElementById('jettonRecipient').value;
       const amount = document.getElementById('jettonAmount').value;
       const comment = document.getElementById('jettonComment').value;
+
+      submitBtn.disabled = true;
+      const origText = submitBtn.textContent;
+      submitBtn.textContent = 'Sending...';
 
       try {
         const response = await fetch('/api/transfer/jetton', {
@@ -427,6 +444,9 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = origText;
       }
     }
   </script>
