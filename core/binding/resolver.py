@@ -22,7 +22,8 @@ def snake_to_camel(s):
 def normalize_id(value):
     if not value:
         return None
-    return value.split("/")[-1]
+    # BOLT OPTIMIZATION: Use rsplit with maxsplit=1 to stop splitting after rightmost '/' and avoid extra list allocations.
+    return value.rsplit("/", 1)[-1]
 
 def bind_views(elem, child=False):
     view_id = normalize_id(elem.get(A_ID))
