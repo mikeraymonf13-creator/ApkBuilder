@@ -13,7 +13,9 @@ DEFAULT_IMPORTS = {
 }
 
 def layout_to_binding_class_name(filename):
-    name = filename.replace(".xml", "")
+    # BOLT OPTIMIZATION: Use suffix slicing instead of str.replace to avoid
+    # searching the entire string or incorrectly replacing .xml occurrences in the middle of filename.
+    name = filename[:-4] if filename.endswith(".xml") else filename
     parts = name.split("_")
     return "".join(p.capitalize() for p in parts) + "Binding"
 
@@ -146,19 +148,22 @@ def generate_bind(class_name, root_type, root_id, views):
 
     return "\n".join(lines)
 
+# BOLT OPTIMIZATION: Constant static method string to avoid redundant string allocation on each binding code generation.
+FIND_CHILD_CODE = (
+    "    private static <T extends View> T findChildViewById(View rootView, int id) {\n"
+    "        if (rootView instanceof ViewGroup) {\n"
+    "            ViewGroup rootViewGroup = (ViewGroup) rootView;\n"
+    "            for (int i = 0; i < rootViewGroup.getChildCount(); i++) {\n"
+    "                T view = rootViewGroup.getChildAt(i).findViewById(id);\n"
+    "                if (view != null) return view;\n"
+    "            }\n"
+    "        }\n"
+    "        return null;\n"
+    "    }\n"
+)
+
 def generate_find_child():
-    return (
-        "    private static <T extends View> T findChildViewById(View rootView, int id) {\n"
-        "        if (rootView instanceof ViewGroup) {\n"
-        "            ViewGroup rootViewGroup = (ViewGroup) rootView;\n"
-        "            for (int i = 0; i < rootViewGroup.getChildCount(); i++) {\n"
-        "                T view = rootViewGroup.getChildAt(i).findViewById(id);\n"
-        "                if (view != null) return view;\n"
-        "            }\n"
-        "        }\n"
-        "        return null;\n"
-        "    }\n"
-    )
+    return FIND_CHILD_CODE
 
 def generate_binding_code(package, class_name, layout_name, root_node):
     views = []

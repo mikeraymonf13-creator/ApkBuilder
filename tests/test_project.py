@@ -261,5 +261,15 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_binding_helpers(self):
+        from core.binding.generator import layout_to_binding_class_name
+        from core.binding.resolver import normalize_id
+
+        self.assertEqual(layout_to_binding_class_name("activity_main.xml"), "ActivityMainBinding")
+        self.assertEqual(layout_to_binding_class_name("xml_layout_item.xml"), "XmlLayoutItemBinding")
+
+        self.assertEqual(normalize_id("@+id/submit_button"), "submit_button")
+        self.assertIsNone(normalize_id(None))
+
 if __name__ == "__main__":
     unittest.main()
