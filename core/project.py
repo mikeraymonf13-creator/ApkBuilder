@@ -179,10 +179,22 @@ class Project:
         except OSError:
             return result
         
-        for root, _, files in os.walk(base_dir):
-            for f in files:
-                if f.endswith(suffix):
-                    result.append(os.path.join(root, f))
+        # BOLT OPTIMIZATION: Use iterative stack-based os.scandir traversal instead of
+        # os.walk to leverage OS directory entry metadata (d_type), avoid intermediate
+        # list allocations ((root, dirs, files) per dir), and eliminate os.path.join overhead.
+        stack = [base_dir]
+        while stack:
+            curr = stack.pop()
+            try:
+                with os.scandir(curr) as entries:
+                    for entry in entries:
+                        if entry.is_dir(follow_symlinks=False):
+                            stack.append(entry.path)
+                        elif entry.is_file() and entry.name.endswith(suffix):
+                            result.append(entry.path)
+            except OSError:
+                pass
+
         return result
     
     def find_java_files(self, base_dir=None):
