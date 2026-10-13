@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-13 - Batch independent web portal API calls using Promise.all
+**Learning:** `fetchTonAccountInfo` in BorderP45 web app fetched account balance and transaction history sequentially, creating a network waterfall latency on wallet connection.
+**Action:** Use `Promise.all` for independent API requests on wallet status changes to run fetches in parallel.
