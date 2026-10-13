@@ -1,5 +1,6 @@
 from utils.util import run, get_logger, cmd_is_available
 from core.project import Project
+import glob
 import os
 
 class JavaTask:
@@ -65,9 +66,6 @@ class KotlinTask:
         get_logger().info("-- Compiling kotlin files")
 
         kotlinc_available = cmd_is_available(self.project.bin_kotlinc)
-        if not kotlinc_available:
-            raise Exception("> kotlinc not detected in PATH. Please set it in PATH.")
-        
         
         kotlin_classes_dir = self.project.kotlin_classes_dir
         os.makedirs(kotlin_classes_dir, exist_ok=True)
@@ -79,13 +77,31 @@ class KotlinTask:
             *lib_jars
         ])
 
-        
-        args = [
-            self.project.bin_kotlinc,
-            *kotlin_files,
-            "-classpath", classpath,
-            "-d", self.project.kotlin_classes_dir,
-            "-jvm-target", str(self.project.java_version)
-        ]
+        if kotlinc_available:
+            args = [
+                self.project.bin_kotlinc,
+                *kotlin_files,
+                "-classpath", classpath,
+                "-d", self.project.kotlin_classes_dir,
+                "-jvm-target", str(self.project.java_version)
+            ]
+        else:
+            # Fallback: check for system Kotlin compiler JARs (e.g., Gradle bundle)
+            gradle_jars = glob.glob("/usr/share/gradle-*/lib/*.jar")
+            compiler_jar = [j for j in gradle_jars if "kotlin-compiler-embeddable" in j or "kotlin-compiler" in j]
+            if compiler_jar and cmd_is_available("java"):
+                cp_jars = os.pathsep.join(gradle_jars)
+                args = [
+                    "java",
+                    "-cp", cp_jars,
+                    "org.jetbrains.kotlin.cli.jvm.K2JVMCompiler",
+                    "-no-stdlib",
+                    *kotlin_files,
+                    "-classpath", classpath,
+                    "-d", self.project.kotlin_classes_dir,
+                    "-jvm-target", str(self.project.java_version)
+                ]
+            else:
+                raise Exception("> kotlinc not detected in PATH. Please set it in PATH.")
         
         run(args)
