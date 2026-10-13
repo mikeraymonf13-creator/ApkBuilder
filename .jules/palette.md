@@ -1,0 +1,3 @@
+## 2026-10-13 - Tab Navigation and Live Status Announcements in Single Page Portals
+**Learning:** In plain HTML/JS single-page web portals, tabs without `role="tablist"`, `role="tab"`, and dynamic `aria-selected` attributes are inaccessible to assistive technologies. Additionally, dynamically inserted transfer result alerts need `role="status"` and `aria-live="polite"` so screen reader users are notified when async background requests complete.
+**Action:** Always include complete WAI-ARIA tab semantics (`role="tablist"`, `role="tab"`, `role="tabpanel"`, `aria-controls`, `aria-selected`) and update `aria-selected` in tab switching scripts. Mark dynamic result/feedback containers with `role="status"` and `aria-live="polite"`.
