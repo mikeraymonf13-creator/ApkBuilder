@@ -104,6 +104,32 @@ android:
         result = proj.find_files(nonexistent, ".java")
         self.assertEqual(result, [])
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_files_nested_directories(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        nested_dir = os.path.join(self.project_dir, "src", "java", "com", "example", "app")
+        os.makedirs(nested_dir, exist_ok=True)
+
+        file_java1 = os.path.join(self.project_dir, "src", "java", "Main.java")
+        file_java2 = os.path.join(nested_dir, "Activity.java")
+        file_kt = os.path.join(nested_dir, "Utils.kt")
+
+        for filepath in (file_java1, file_java2, file_kt):
+            with open(filepath, "w") as f:
+                f.write("// stub")
+
+        java_files = proj.find_files(os.path.join(self.project_dir, "src", "java"), ".java")
+        self.assertEqual(len(java_files), 2)
+        self.assertIn(file_java1, java_files)
+        self.assertIn(file_java2, java_files)
+        self.assertNotIn(file_kt, java_files)
+
+        kt_files = proj.find_files(os.path.join(self.project_dir, "src", "java"), ".kt")
+        self.assertEqual(len(kt_files), 1)
+        self.assertEqual(kt_files[0], file_kt)
+
     @patch("utils.util.get_bin", return_value=None)
     @patch("os.getenv", return_value=None)
     def test_sdk_and_bin_fallback(self, mock_getenv, mock_get_bin):
