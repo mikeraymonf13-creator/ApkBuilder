@@ -148,15 +148,22 @@ class Project:
 
         packages = set()
         if os.path.isdir(self.libs_dir):
-            for root, _, files in os.walk(self.libs_dir):
-                for f in files:
-                    if f != "AndroidManifest.xml":
-                        continue
-
-                    manifest_file = os.path.join(root, f)
-                    pkg = ET.parse(manifest_file).getroot().attrib.get("package")
-                    if pkg:
-                        packages.add(pkg)
+            # BOLT OPTIMIZATION: Use os.scandir stack traversal instead of os.walk
+            # to leverage directory entry metadata and avoid os.path.join overhead.
+            stack = [self.libs_dir]
+            while stack:
+                curr = stack.pop()
+                try:
+                    with os.scandir(curr) as entries:
+                        for entry in entries:
+                            if entry.is_dir(follow_symlinks=False):
+                                stack.append(entry.path)
+                            elif entry.name == "AndroidManifest.xml":
+                                pkg = ET.parse(entry.path).getroot().attrib.get("package")
+                                if pkg:
+                                    packages.add(pkg)
+                except OSError:
+                    pass
         
         self._cached_lib_package_names = ":".join(sorted(packages))
         return self._cached_lib_package_names
@@ -179,10 +186,20 @@ class Project:
         except OSError:
             return result
         
-        for root, _, files in os.walk(base_dir):
-            for f in files:
-                if f.endswith(suffix):
-                    result.append(os.path.join(root, f))
+        # BOLT OPTIMIZATION: Use os.scandir stack traversal instead of os.walk
+        # to avoid os.path.join string manipulation and os.walk tuple allocations.
+        stack = [base_dir]
+        while stack:
+            curr = stack.pop()
+            try:
+                with os.scandir(curr) as entries:
+                    for entry in entries:
+                        if entry.is_dir(follow_symlinks=False):
+                            stack.append(entry.path)
+                        elif entry.name.endswith(suffix):
+                            result.append(entry.path)
+            except OSError:
+                pass
         return result
     
     def find_java_files(self, base_dir=None):
@@ -195,16 +212,26 @@ class Project:
     
     def find_lib_jars(self):
         # BOLT OPTIMIZATION: Cache library jar paths to avoid running redundant
-        # os.walk traversals on libs_dir across compiler, dexer, and packager steps.
+        # directory traversals on libs_dir across compiler, dexer, and packager steps.
         if self._cached_lib_jars is not None:
             return list(self._cached_lib_jars)
 
         jars = []
         if os.path.isdir(self.libs_dir):
-            for root, _, files in os.walk(self.libs_dir):
-                for f in files:
-                    if f.endswith(".jar") and f != "lint.jar":
-                        jars.append(os.path.join(root, f))
+            # BOLT OPTIMIZATION: Use os.scandir stack traversal instead of os.walk
+            # to leverage entry.path directly and avoid os.path.join overhead.
+            stack = [self.libs_dir]
+            while stack:
+                curr = stack.pop()
+                try:
+                    with os.scandir(curr) as entries:
+                        for entry in entries:
+                            if entry.is_dir(follow_symlinks=False):
+                                stack.append(entry.path)
+                            elif entry.name.endswith(".jar") and entry.name != "lint.jar":
+                                jars.append(entry.path)
+                except OSError:
+                    pass
         self._cached_lib_jars = jars
         return list(self._cached_lib_jars)
     
