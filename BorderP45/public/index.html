@@ -168,6 +168,11 @@
       background-color: var(--accent-hover);
     }
 
+    button.btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
     .status-card {
       margin-top: 20px;
       padding: 14px;
@@ -254,7 +259,7 @@
           <label for="tonComment">Comment / Payload (Optional)</label>
           <input type="text" id="tonComment" placeholder="Transfer memo">
         </div>
-        <button type="submit" class="btn-submit">Send TON</button>
+        <button type="submit" class="btn-submit" id="tonSubmitBtn">Send TON</button>
       </form>
       <div id="tonStatus" class="status-card"></div>
     </div>
@@ -278,7 +283,7 @@
           <label for="jettonComment">Comment / Payload (Optional)</label>
           <input type="text" id="jettonComment" placeholder="Transfer memo">
         </div>
-        <button type="submit" class="btn-submit">Send Jetton</button>
+        <button type="submit" class="btn-submit" id="jettonSubmitBtn">Send Jetton</button>
       </form>
       <div id="jettonStatus" class="status-card"></div>
     </div>
@@ -372,12 +377,18 @@
     async function handleTonTransfer(event) {
       event.preventDefault();
       const statusDiv = document.getElementById('tonStatus');
+      const submitBtn = document.getElementById('tonSubmitBtn');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
 
       const recipient = document.getElementById('tonRecipient').value;
       const amount = document.getElementById('tonAmount').value;
       const comment = document.getElementById('tonComment').value;
+
+      const originalBtnText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      submitBtn.textContent = 'Sending TON...';
 
       try {
         const response = await fetch('/api/transfer/ton', {
@@ -396,12 +407,17 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+        submitBtn.textContent = originalBtnText;
       }
     }
 
     async function handleJettonTransfer(event) {
       event.preventDefault();
       const statusDiv = document.getElementById('jettonStatus');
+      const submitBtn = document.getElementById('jettonSubmitBtn');
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
 
@@ -409,6 +425,11 @@
       const recipient = document.getElementById('jettonRecipient').value;
       const amount = document.getElementById('jettonAmount').value;
       const comment = document.getElementById('jettonComment').value;
+
+      const originalBtnText = submitBtn.textContent;
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      submitBtn.textContent = 'Sending Jetton...';
 
       try {
         const response = await fetch('/api/transfer/jetton', {
@@ -427,6 +448,10 @@
       } catch (err) {
         statusDiv.className = 'status-card error';
         statusDiv.innerHTML = `<strong>Network Error:</strong> ${err.message}`;
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+        submitBtn.textContent = originalBtnText;
       }
     }
   </script>
