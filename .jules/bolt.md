@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-13 - Stack-based os.scandir tree traversal outperforms os.walk
+**Learning:** `os.walk()` creates tuple lists (`dirpath`, `dirnames`, `filenames`) at every directory level and requires explicit `os.path.join()` calls for every file entry. Replacing `os.walk()` with stack-based `os.scandir()` traversal allows reading `entry.path` directly, eliminating `os.path.join` string manipulation overhead and avoiding intermediate tuple allocations during deep directory tree scans in build tasks.
+**Action:** Use an explicit stack with `os.scandir()` for recursive directory tree traversals when searching for matching files by extension or pattern.
