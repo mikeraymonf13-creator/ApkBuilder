@@ -185,7 +185,7 @@ class Project:
                     for entry in entries:
                         if entry.is_dir(follow_symlinks=False):
                             _scan(entry.path)
-                        elif entry.is_file(follow_symlinks=False) and entry.name.endswith(suffix):
+                        elif entry.name.endswith(suffix) and entry.is_file(follow_symlinks=False):
                             result.append(entry.path)
             except OSError:
                 pass
@@ -226,7 +226,7 @@ class Project:
                 return [
                     entry.path
                     for entry in entries
-                    if entry.is_file() and entry.name.endswith(".dex")
+                    if entry.name.endswith(".dex") and entry.is_file()
                 ]
         except OSError:
             return []
@@ -246,7 +246,7 @@ class Project:
                         abi = abi_entry.name
                         with os.scandir(abi_entry.path) as lib_entries:
                             for lib_entry in lib_entries:
-                                if lib_entry.is_file() and lib_entry.name.endswith(".so"):
+                                if lib_entry.name.endswith(".so") and lib_entry.is_file():
                                     libs.append((abi, lib_entry.path))
         except OSError:
             pass
