@@ -20,5 +20,25 @@ class TestUtil(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertTrue(path.endswith("python3"))
 
+    def test_get_bin_caching(self):
+        from utils.util import _bin_cache
+        bin_name = "python3"
+        path1 = get_bin(bin_name)
+        self.assertIn(bin_name, _bin_cache)
+        self.assertEqual(_bin_cache[bin_name], path1)
+
+        path2 = get_bin(bin_name)
+        self.assertEqual(path1, path2)
+
+    def test_cmd_is_available_caching(self):
+        from utils.util import _cmd_availability_cache
+        bin_name = "python3"
+        result1 = cmd_is_available(bin_name)
+        self.assertIn(bin_name, _cmd_availability_cache)
+        self.assertTrue(result1)
+
+        result2 = cmd_is_available(bin_name)
+        self.assertEqual(result1, result2)
+
 if __name__ == "__main__":
     unittest.main()
