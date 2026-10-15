@@ -1,11 +1,15 @@
 from core.binding.model import ViewNode
 from core.binding.parser import ANDROID_NS
+from functools import lru_cache
 
 A = f"{{{ANDROID_NS}}}"
 # BOLT OPTIMIZATION: Precompute android:id attribute key to avoid
 # repeated string concatenation in bind_views during XML AST traversal.
 A_ID = f"{{{ANDROID_NS}}}id"
 
+# BOLT OPTIMIZATION: Cache snake_to_camel conversions to avoid repeated string splitting,
+# list allocations, and joins when processing common/duplicate view IDs across XML layout nodes.
+@lru_cache(maxsize=512)
 def snake_to_camel(s):
     if "_" not in s:
         return s
@@ -19,6 +23,8 @@ def snake_to_camel(s):
     else:
         return partes[0] + ''.join(p[0].upper() + p[1:] for p in partes[1:])
 
+# BOLT OPTIMIZATION: Cache ID normalization to make resource ID parsing O(1) for repeated view IDs.
+@lru_cache(maxsize=512)
 def normalize_id(value):
     if not value:
         return None

@@ -3,6 +3,7 @@ from core.binding.parser import parse_layout
 from core.binding.resolver import bind_views
 from utils.util import get_logger
 from core.project import Project
+from functools import lru_cache
 import os
 
 DEFAULT_IMPORTS = {
@@ -12,11 +13,16 @@ DEFAULT_IMPORTS = {
     "android.widget.*"
 }
 
+# BOLT OPTIMIZATION: Cache layout filename to binding class name conversion.
+@lru_cache(maxsize=256)
 def layout_to_binding_class_name(filename):
     name = filename.replace(".xml", "")
     parts = name.split("_")
     return "".join(p.capitalize() for p in parts) + "Binding"
 
+# BOLT OPTIMIZATION: Cache simple_tag calculations to avoid repeated string splits on
+# identical class names across XML elements during view binding code generation.
+@lru_cache(maxsize=256)
 def simple_tag(tag):
     if not tag:
         return None
