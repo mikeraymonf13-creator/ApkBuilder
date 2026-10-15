@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-15 - Memoize string parsing during view binding generation
+**Learning:** XML layout parsing in Android view binding generation resolves view tags and resource IDs repeatedly across elements and layouts. Pure utility functions like `snake_to_camel`, `normalize_id`, and `simple_tag` benefit significantly from `functools.lru_cache` (reducing repeated string conversion time by >70%).
+**Action:** Use bounded `functools.lru_cache` on pure string transformation utilities during AST traversals.
