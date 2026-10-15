@@ -3,6 +3,7 @@ import os
 import subprocess
 import logging
 import shutil
+import functools
 
 handler = logging.StreamHandler()
 handler.setFormatter(ColorFormatter(
@@ -26,6 +27,9 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache binary availability checks to avoid redundant PATH
+# traversals (shutil.which) and file access syscalls (os.access) across build tasks.
+@functools.lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
