@@ -318,6 +318,34 @@
       btnElement.setAttribute('aria-selected', 'true');
     }
 
+    const tabContainer = document.querySelector('.tabs');
+    if (tabContainer) {
+      tabContainer.addEventListener('keydown', (e) => {
+        const tabs = Array.from(tabContainer.querySelectorAll('.tab-btn'));
+        const currentIndex = tabs.indexOf(document.activeElement);
+        if (currentIndex === -1) return;
+
+        let newIndex = currentIndex;
+        if (e.key === 'ArrowRight') {
+          newIndex = (currentIndex + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft') {
+          newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+          newIndex = 0;
+        } else if (e.key === 'End') {
+          newIndex = tabs.length - 1;
+        } else {
+          return;
+        }
+
+        e.preventDefault();
+        const targetTab = tabs[newIndex];
+        targetTab.focus();
+        const targetTabId = targetTab.getAttribute('aria-controls');
+        switchTab(targetTabId, targetTab);
+      });
+    }
+
     function updateOnlineStatus() {
       const badge = document.getElementById('connectionStatus');
       if (navigator.onLine) {
