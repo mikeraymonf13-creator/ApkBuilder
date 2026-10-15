@@ -106,6 +106,15 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_files_file_as_dir(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        file_as_dir = os.path.join(self.project_dir, "test.keystore")
+        result = proj.find_files(file_as_dir, ".java")
+        self.assertEqual(result, [])
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_find_files_nested_directories(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 

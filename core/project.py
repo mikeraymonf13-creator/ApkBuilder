@@ -162,24 +162,15 @@ class Project:
         return self._cached_lib_package_names
     
     def find_files(self, base_dir, suffix):
-        # BOLT OPTIMIZATION: Use recursive os.scandir instead of os.walk to avoid
-        # intermediate tuple/list allocations and redundant os.path.join calls during
-        # filesystem traversals. Reduces directory scan overhead by ~25-30%.
+        # BOLT OPTIMIZATION: Scan directory directly with os.scandir without a preliminary
+        # os.stat() call, avoiding redundant syscalls on every directory traversal.
         result = []
         
         if not base_dir:
             get_logger().error("-- no base dir found")
             return result
         
-        try:
-            st = os.stat(base_dir)
-            if not stat.S_ISDIR(st.st_mode):
-                get_logger().error("-- base dir cannot be file")
-                return result
-        except OSError:
-            return result
-        
-        def _scan(path):
+        def _scan(path, is_root=False):
             try:
                 with os.scandir(path) as entries:
                     for entry in entries:
@@ -187,10 +178,13 @@ class Project:
                             _scan(entry.path)
                         elif entry.is_file(follow_symlinks=False) and entry.name.endswith(suffix):
                             result.append(entry.path)
+            except NotADirectoryError:
+                if is_root:
+                    get_logger().error("-- base dir cannot be file")
             except OSError:
                 pass
 
-        _scan(base_dir)
+        _scan(base_dir, is_root=True)
         return result
     
     def find_java_files(self, base_dir=None):
