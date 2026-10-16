@@ -287,5 +287,65 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    @patch("core.dexer.cmd_is_available", return_value=True)
+    def test_dexer_prepare_deduplication(self, mock_cmd_avail, mock_getenv, mock_get_bin):
+        from core.dexer import Task as DexerTask
+        # Add a second jar in the same library directory
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "secondary.jar"), "w") as f:
+            f.write("dummy jar")
+
+        proj = Project(self.project_dir)
+        task = DexerTask(proj)
+
+        with patch.object(proj, "find_files", wraps=proj.find_files) as mock_find_files, \
+             patch.object(task, "_Task__dex_library") as mock_dex_lib:
+            task.prepare()
+            # find_files should only be called once for lib1_dir despite 2 jars being present
+            self.assertEqual(mock_find_files.call_count, 1)
+            # Both jars should still be dexed
+            self.assertEqual(mock_dex_lib.call_count, 2)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_packager_dex_deduplication(self, mock_getenv, mock_get_bin):
+        from core.packager import Task as PackagerTask
+        import zipfile
+
+        # Add a second jar in lib1_dir and a dex file
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "secondary.jar"), "w") as f:
+            f.write("dummy jar")
+        lib_dex = os.path.join(lib1_dir, "classes.dex")
+        with open(lib_dex, "w") as f:
+            f.write("dummy dex")
+
+        proj = Project(self.project_dir)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        main_dex = os.path.join(proj.dex_dir, "classes.dex")
+        with open(main_dex, "w") as f:
+            f.write("main dex")
+
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        with open(os.path.join(proj.bin_dir, "gen.apk.res"), "w") as f:
+            f.write("dummy res")
+
+        task = PackagerTask(proj)
+
+        written_names = []
+        fake_zip = MagicMock()
+        fake_zip.write.side_effect = lambda filename, arcname: written_names.append(arcname)
+
+        with patch("zipfile.ZipFile") as mock_zipfile, \
+             patch.object(task, "_Task__sign_apk") as mock_sign:
+            mock_zipfile.return_value.__enter__.return_value = fake_zip
+            task.start()
+
+            # Expect classes.dex (main dex) and classes2.dex (lib1 dex once)
+            self.assertEqual(written_names.count("classes2.dex"), 1)
+            self.assertNotIn("classes3.dex", written_names)
+
 if __name__ == "__main__":
     unittest.main()
