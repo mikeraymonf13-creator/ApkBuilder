@@ -162,21 +162,12 @@ class Project:
         return self._cached_lib_package_names
     
     def find_files(self, base_dir, suffix):
-        # BOLT OPTIMIZATION: Use recursive os.scandir instead of os.walk to avoid
-        # intermediate tuple/list allocations and redundant os.path.join calls during
-        # filesystem traversals. Reduces directory scan overhead by ~25-30%.
+        # BOLT OPTIMIZATION: Use recursive os.scandir and short-circuit name.endswith(suffix)
+        # before entry.is_file() to avoid unnecessary stat queries for non-matching files.
         result = []
         
         if not base_dir:
             get_logger().error("-- no base dir found")
-            return result
-        
-        try:
-            st = os.stat(base_dir)
-            if not stat.S_ISDIR(st.st_mode):
-                get_logger().error("-- base dir cannot be file")
-                return result
-        except OSError:
             return result
         
         def _scan(path):
@@ -185,7 +176,7 @@ class Project:
                     for entry in entries:
                         if entry.is_dir(follow_symlinks=False):
                             _scan(entry.path)
-                        elif entry.is_file(follow_symlinks=False) and entry.name.endswith(suffix):
+                        elif entry.name.endswith(suffix) and entry.is_file(follow_symlinks=False):
                             result.append(entry.path)
             except OSError:
                 pass
