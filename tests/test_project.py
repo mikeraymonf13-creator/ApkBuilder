@@ -287,5 +287,48 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    @patch("core.packager.Task._Task__sign_apk")
+    def test_packager_deduplicate_dex(self, mock_sign_apk, mock_getenv, mock_get_bin):
+        import zipfile
+        from core.packager import Task as PackagerTask
+        proj = Project(self.project_dir)
+
+        # Setup required files for packaging
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+
+        gen_apk_res = os.path.join(proj.bin_dir, "gen.apk.res")
+        with zipfile.ZipFile(gen_apk_res, "w") as z:
+            z.writestr("resources.arsc", b"dummy res")
+
+        primary_dex = os.path.join(proj.dex_dir, "classes.dex")
+        with open(primary_dex, "w") as f:
+            f.write("primary dex")
+
+        # Create library directory with two JAR files and one shared dex file
+        lib_shared_dir = os.path.join(self.libs_dir, "shared_lib")
+        os.makedirs(lib_shared_dir, exist_ok=True)
+        with open(os.path.join(lib_shared_dir, "libA.jar"), "w") as f:
+            f.write("jar A")
+        with open(os.path.join(lib_shared_dir, "libB.jar"), "w") as f:
+            f.write("jar B")
+        lib_dex = os.path.join(lib_shared_dir, "classes.dex")
+        with open(lib_dex, "w") as f:
+            f.write("library dex")
+
+        packager = PackagerTask(proj)
+        packager.start()
+
+        # Verify that unsigned.apk was created and has classes.dex and classes2.dex, but NOT classes3.dex
+        out_apk = os.path.join(proj.bin_dir, "unsigned.apk")
+        self.assertTrue(os.path.isfile(out_apk))
+        with zipfile.ZipFile(out_apk, "r") as z:
+            namelist = z.namelist()
+            self.assertIn("classes.dex", namelist)
+            self.assertIn("classes2.dex", namelist)
+            self.assertNotIn("classes3.dex", namelist)
+
 if __name__ == "__main__":
     unittest.main()

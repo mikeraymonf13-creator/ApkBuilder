@@ -48,6 +48,10 @@ class Task:
                 apk.write(dex, name)
             
             dex_index = len(dex_files) + 1
+            # BOLT OPTIMIZATION: Track already packaged library dex files to prevent
+            # duplicate entries when multiple library JARs reside in the same directory.
+            # Avoids redundant zip compression I/O and invalid duplicate class entries.
+            visited_dex = set(dex_files)
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
                 library_dex_files = self.project.find_files(library_dir, ".dex")
@@ -55,6 +59,9 @@ class Task:
                     continue
                 
                 for dex in library_dex_files:
+                    if dex in visited_dex:
+                        continue
+                    visited_dex.add(dex)
                     name = f"classes{dex_index}.dex"
                     apk.write(dex, name)
                     dex_index += 1
