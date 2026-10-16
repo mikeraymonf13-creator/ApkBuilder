@@ -16,10 +16,16 @@ class Task:
         if not os.path.exists(self.project.dex_dir):
             os.makedirs(self.project.dex_dir)
         
+        # BOLT OPTIMIZATION: Cache whether .dex files exist per library directory
+        # to avoid redundant recursive filesystem traversals while still ensuring
+        # every JAR file in the directory is dexed if needed.
+        dir_has_dex = {}
         for library in self.project.find_lib_jars():
             library_dir = os.path.dirname(library)
-            dex_files = self.project.find_files(library_dir, ".dex")
-            if not dex_files:
+            if library_dir not in dir_has_dex:
+                dir_has_dex[library_dir] = bool(self.project.find_files(library_dir, ".dex"))
+
+            if not dir_has_dex[library_dir]:
                 self.__dex_library(library)
     
     def start(self):
