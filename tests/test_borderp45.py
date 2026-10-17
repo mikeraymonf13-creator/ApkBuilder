@@ -19,6 +19,15 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'tonconnect-ui.min.js', res.data)
         self.assertIn(b'id="ton-connect"', res.data)
 
+    def test_accessibility_attributes(self):
+        res = self.client.get('/')
+        self.assertEqual(res.status_code, 200)
+        self.assertIn(b'autocapitalize="none"', res.data)
+        self.assertIn(b'role="status"', res.data)
+        self.assertIn(b'aria-live="polite"', res.data)
+        self.assertIn(b'min="0"', res.data)
+        self.assertIn(b'tablistEl.addEventListener(\'keydown\'', res.data)
+
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')
         self.assertEqual(res_sw.status_code, 200)
