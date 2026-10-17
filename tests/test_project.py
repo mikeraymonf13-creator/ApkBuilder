@@ -287,5 +287,58 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.cmd_is_available", return_value=True)
+    @patch("utils.util.run")
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_packager_dex_deduplication(self, mock_getenv, mock_get_bin, mock_run, mock_cmd_avail):
+        import zipfile
+        from core.packager import Task as PackagerTask
+
+        proj = Project(self.project_dir)
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+
+        # Create dummy main dex
+        classes_dex = os.path.join(proj.dex_dir, "classes.dex")
+        with open(classes_dex, "w") as f:
+            f.write("main dex")
+
+        # Create initial gen.apk.res zip file
+        res_apk = os.path.join(proj.bin_dir, "gen.apk.res")
+        with zipfile.ZipFile(res_apk, "w") as zf:
+            zf.writestr("AndroidManifest.xml", "dummy manifest")
+
+        # Create library directory with two JAR files and a shared .dex file
+        shared_lib_dir = os.path.join(self.libs_dir, "shared_lib")
+        os.makedirs(shared_lib_dir, exist_ok=True)
+        with open(os.path.join(shared_lib_dir, "libA.jar"), "w") as f:
+            f.write("jar A")
+        with open(os.path.join(shared_lib_dir, "libB.jar"), "w") as f:
+            f.write("jar B")
+        with open(os.path.join(shared_lib_dir, "classes.dex"), "w") as f:
+            f.write("lib dex")
+
+        # Mock run to simulate apksigner copying unsigned.apk to gen.apk before unsigned.apk is deleted
+        def side_effect_run(args):
+            if "apksigner" in args[0] or "sign" in args:
+                out_path = os.path.join(proj.bin_dir, "gen.apk")
+                in_path = os.path.join(proj.bin_dir, "unsigned.apk")
+                import shutil
+                shutil.copy2(in_path, out_path)
+
+        mock_run.side_effect = side_effect_run
+
+        packager_task = PackagerTask(proj)
+        packager_task.start()
+
+        out_apk = os.path.join(proj.bin_dir, "gen.apk")
+        self.assertTrue(os.path.isfile(out_apk))
+        with zipfile.ZipFile(out_apk, "r") as zf:
+            namelist = zf.namelist()
+            self.assertIn("classes.dex", namelist)
+            self.assertIn("classes2.dex", namelist)
+            self.assertNotIn("classes3.dex", namelist)
+
 if __name__ == "__main__":
     unittest.main()

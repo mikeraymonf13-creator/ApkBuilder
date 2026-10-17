@@ -47,7 +47,11 @@ class Task:
                 name = os.path.basename(dex)
                 apk.write(dex, name)
             
+            # BOLT OPTIMIZATION: Track processed dex files to prevent redundant
+            # filesystem scans and avoid packing duplicate dex files into the APK
+            # when multiple library JARs share the same library directory.
             dex_index = len(dex_files) + 1
+            processed_dexes = set()
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
                 library_dex_files = self.project.find_files(library_dir, ".dex")
@@ -55,6 +59,9 @@ class Task:
                     continue
                 
                 for dex in library_dex_files:
+                    if dex in processed_dexes:
+                        continue
+                    processed_dexes.add(dex)
                     name = f"classes{dex_index}.dex"
                     apk.write(dex, name)
                     dex_index += 1
