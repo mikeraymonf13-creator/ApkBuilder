@@ -143,17 +143,15 @@ class Project:
     def get_lib_package_names(self):
         # BOLT OPTIMIZATION: Cache library package names to avoid re-scanning
         # libs_dir and re-parsing AndroidManifest.xml files across build steps.
+        # Uses find_files (os.scandir) to avoid os.walk tuple allocations and stat syscalls.
         if self._cached_lib_package_names is not None:
             return self._cached_lib_package_names
 
         packages = set()
         if os.path.isdir(self.libs_dir):
-            for root, _, files in os.walk(self.libs_dir):
-                for f in files:
-                    if f != "AndroidManifest.xml":
-                        continue
-
-                    manifest_file = os.path.join(root, f)
+            manifest_files = self.find_files(self.libs_dir, "AndroidManifest.xml")
+            for manifest_file in manifest_files:
+                if os.path.basename(manifest_file) == "AndroidManifest.xml":
                     pkg = ET.parse(manifest_file).getroot().attrib.get("package")
                     if pkg:
                         packages.add(pkg)
@@ -183,9 +181,9 @@ class Project:
             try:
                 with os.scandir(path) as entries:
                     for entry in entries:
-                        if entry.is_dir(follow_symlinks=False):
+                        if entry.is_dir():
                             _scan(entry.path)
-                        elif entry.is_file(follow_symlinks=False) and entry.name.endswith(suffix):
+                        elif entry.is_file() and entry.name.endswith(suffix):
                             result.append(entry.path)
             except OSError:
                 pass
@@ -203,16 +201,17 @@ class Project:
     
     def find_lib_jars(self):
         # BOLT OPTIMIZATION: Cache library jar paths to avoid running redundant
-        # os.walk traversals on libs_dir across compiler, dexer, and packager steps.
+        # directory traversals on libs_dir across compiler, dexer, and packager steps.
+        # Uses find_files (os.scandir) to avoid os.walk tuple allocations and stat syscalls.
         if self._cached_lib_jars is not None:
             return list(self._cached_lib_jars)
 
         jars = []
         if os.path.isdir(self.libs_dir):
-            for root, _, files in os.walk(self.libs_dir):
-                for f in files:
-                    if f.endswith(".jar") and f != "lint.jar":
-                        jars.append(os.path.join(root, f))
+            jars = [
+                f for f in self.find_files(self.libs_dir, ".jar")
+                if os.path.basename(f) != "lint.jar"
+            ]
         self._cached_lib_jars = jars
         return list(self._cached_lib_jars)
     
