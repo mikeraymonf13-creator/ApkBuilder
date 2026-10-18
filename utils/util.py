@@ -23,9 +23,18 @@ def run(cmd):
 def get_logger():
     return log
 
+from functools import lru_cache
+
+# BOLT OPTIMIZATION: Memoize binary path resolution and availability checks using @lru_cache.
+# Executables on PATH or in SDK directories do not change during build execution.
+# Caching eliminates repetitive $PATH directory scans via shutil.which and redundant
+# stat/access syscalls for executable paths.
+
+@lru_cache(maxsize=128)
 def get_bin(cmd):
     return shutil.which(cmd)
 
+@lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
