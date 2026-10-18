@@ -20,5 +20,23 @@ class TestUtil(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertTrue(path.endswith("python3"))
 
+    def test_lru_cache_util_functions(self):
+        # Clear cache before test
+        get_bin.cache_clear()
+        cmd_is_available.cache_clear()
+
+        # Call get_bin twice
+        res1 = get_bin("python3")
+        res2 = get_bin("python3")
+        self.assertEqual(res1, res2)
+        info = get_bin.cache_info()
+        self.assertGreaterEqual(info.hits, 1)
+
+        # Call cmd_is_available twice
+        cmd_is_available("python3")
+        cmd_is_available("python3")
+        info_cmd = cmd_is_available.cache_info()
+        self.assertGreaterEqual(info_cmd.hits, 1)
+
 if __name__ == "__main__":
     unittest.main()
