@@ -20,12 +20,19 @@ def run(cmd):
         stdout=subprocess.DEVNULL
     )
 
+import functools
+
 def get_logger():
     return log
 
+# BOLT OPTIMIZATION: Memoize binary path resolutions and availability checks
+# to avoid redundant PATH directory scans (shutil.which) and stat/access syscalls
+# (os.path.isfile / os.access) across build pipeline tasks (Aapt2, Java, Kotlin, D8, Packager).
+@functools.lru_cache(maxsize=64)
 def get_bin(cmd):
     return shutil.which(cmd)
 
+@functools.lru_cache(maxsize=64)
 def cmd_is_available(cmd):
     if not cmd:
         return False
