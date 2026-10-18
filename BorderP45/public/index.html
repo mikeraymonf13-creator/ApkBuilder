@@ -82,6 +82,33 @@
       margin-top: 4px;
     }
 
+    .address-row {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: rgba(56, 189, 248, 0.1);
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
     .tabs {
       display: flex;
       background-color: var(--card-bg);
@@ -240,7 +267,14 @@
 
     <div class="wallet-card">
       <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
-      <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="walletBalance" class="balance-display" aria-live="polite">— TON</div>
+      <div id="walletAddressContainer" class="address-row" style="display:none;">
+        <div>
+          <span style="color: var(--text-muted);">Address: </span>
+          <span id="walletAddress" style="font-family: monospace; color: var(--text-main);"></span>
+        </div>
+        <button id="copyAddressBtn" class="copy-btn" aria-label="Copy wallet address" onclick="copyWalletAddress()">Copy</button>
+      </div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -296,7 +330,7 @@
     <!-- Activity Tab -->
     <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activity">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
-      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
+      <div id="activityList" aria-live="polite" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
     </div>
   </div>
 
@@ -374,10 +408,37 @@
       }
     }
 
+    let currentRawAddress = '';
+
+    function shortAddress(addr) {
+      return addr ? addr.slice(0, 6) + '…' + addr.slice(-6) : '';
+    }
+
+    async function copyWalletAddress() {
+      if (!currentRawAddress) return;
+      const btn = document.getElementById('copyAddressBtn');
+      try {
+        await navigator.clipboard.writeText(currentRawAddress);
+        btn.textContent = 'Copied!';
+        btn.setAttribute('aria-label', 'Wallet address copied to clipboard');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.setAttribute('aria-label', 'Copy wallet address');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy address:', err);
+      }
+    }
+
     tonConnectUI.onStatusChange(wallet => {
       if (wallet && wallet.account && wallet.account.address) {
+        currentRawAddress = wallet.account.address;
+        document.getElementById('walletAddress').textContent = shortAddress(currentRawAddress);
+        document.getElementById('walletAddressContainer').style.display = 'flex';
         fetchTonAccountInfo(wallet.account.address);
       } else {
+        currentRawAddress = '';
+        document.getElementById('walletAddressContainer').style.display = 'none';
         document.getElementById('walletBalance').textContent = '— TON';
         document.getElementById('activityList').textContent = 'Connect your wallet to view transactions.';
       }
