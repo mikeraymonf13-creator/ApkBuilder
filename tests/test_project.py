@@ -287,5 +287,49 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_packager_multi_jar_dex_deduplication(self, mock_getenv, mock_get_bin):
+        from core.packager import Task as PackagerTask
+
+        with patch("core.packager.cmd_is_available", return_value=True):
+            # Add a second jar to lib1
+            lib1_dir = os.path.join(self.libs_dir, "lib1")
+            with open(os.path.join(lib1_dir, "second.jar"), "w") as f:
+                f.write("dummy second jar")
+
+            proj = Project(self.project_dir)
+            self.assertEqual(len(proj.find_lib_jars()), 2)
+
+            # Test PackagerTask deduplicates library directories when writing dex files
+            packager_task = PackagerTask(proj)
+            # Create a dummy dex file in lib1_dir
+            with open(os.path.join(lib1_dir, "classes.dex"), "w") as f:
+                f.write("dummy dex")
+
+            os.makedirs(proj.bin_dir, exist_ok=True)
+            gen_res = os.path.join(proj.bin_dir, "gen.apk.res")
+            with open(gen_res, "w") as f:
+                f.write("dummy res")
+
+            # Mock __sign_apk and zipfile to test dex packing
+            with patch.object(packager_task, "_Task__sign_apk"):
+                with patch("zipfile.ZipFile") as mock_zipfile:
+                    mock_zip = MagicMock()
+                    mock_zipfile.return_value.__enter__.return_value = mock_zip
+                    # Create a main dex file in proj.dex_dir
+                    os.makedirs(proj.dex_dir, exist_ok=True)
+                    with open(os.path.join(proj.dex_dir, "classes.dex"), "w") as f:
+                        f.write("main dex")
+
+                    packager_task.start()
+
+                    # Verify library dex file was written to apk exactly once
+                    lib_dex_writes = [
+                        call for call in mock_zip.write.call_args_list
+                        if call[0][1] == "classes2.dex"
+                    ]
+                    self.assertEqual(len(lib_dex_writes), 1)
+
 if __name__ == "__main__":
     unittest.main()

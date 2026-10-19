@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-19 - Per-library vs per-JAR task scope in multi-JAR libraries
+**Learning:** In multi-JAR library directories, dexing and resource compilation operate per-JAR file, but DEX packaging in `PackagerTask` scans entire library directories. Deduplicating by library directory in `PackagerTask` avoids redundant filesystem scans and duplicate DEX entries in the output APK, whereas deduplicating by directory in `DexerTask` or `Aapt2Task` would erroneously skip secondary JARs.
+**Action:** Only deduplicate library directory scans during packaging (`PackagerTask`), and cache binary resolution (`shutil.which`) with `lru_cache` for binary lookups.
