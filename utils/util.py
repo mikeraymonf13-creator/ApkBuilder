@@ -26,9 +26,17 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache binary availability checks in-memory to avoid repeated
+# filesystem stat syscalls (os.path.isfile/os.access) and PATH directory scans (shutil.which)
+# across multiple build tasks (aapt2, javac, kotlinc, d8, apksigner, java).
+_cmd_availability_cache = {}
+
 def cmd_is_available(cmd):
     if not cmd:
         return False
-    if os.path.isabs(cmd) or os.sep in cmd:
-        return os.path.isfile(cmd) and os.access(cmd, os.X_OK)
-    return shutil.which(cmd) is not None
+    if cmd not in _cmd_availability_cache:
+        if os.path.isabs(cmd) or os.sep in cmd:
+            _cmd_availability_cache[cmd] = os.path.isfile(cmd) and os.access(cmd, os.X_OK)
+        else:
+            _cmd_availability_cache[cmd] = shutil.which(cmd) is not None
+    return _cmd_availability_cache[cmd]
