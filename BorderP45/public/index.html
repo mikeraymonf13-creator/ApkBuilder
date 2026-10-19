@@ -244,9 +244,9 @@
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
-      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
-      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
+      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" aria-controls="tonTab" tabindex="0" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" aria-controls="jettonTab" tabindex="-1" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" aria-controls="activityTab" tabindex="-1" onclick="switchTab('activityTab', this)">Activity</button>
     </div>
 
     <!-- TON Tab -->
@@ -311,12 +311,39 @@
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
       });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
       btnElement.setAttribute('aria-selected', 'true');
+      btnElement.setAttribute('tabindex', '0');
     }
+
+    document.querySelector('.tabs')?.addEventListener('keydown', (e) => {
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const index = tabs.indexOf(document.activeElement);
+      if (index === -1) return;
+
+      let nextIndex = null;
+      if (e.key === 'ArrowRight') {
+        nextIndex = (index + 1) % tabs.length;
+      } else if (e.key === 'ArrowLeft') {
+        nextIndex = (index - 1 + tabs.length) % tabs.length;
+      } else if (e.key === 'Home') {
+        nextIndex = 0;
+      } else if (e.key === 'End') {
+        nextIndex = tabs.length - 1;
+      }
+
+      if (nextIndex !== null) {
+        e.preventDefault();
+        const targetTab = tabs[nextIndex];
+        const tabId = targetTab.getAttribute('aria-controls');
+        switchTab(tabId, targetTab);
+        targetTab.focus();
+      }
+    });
 
     function updateOnlineStatus() {
       const badge = document.getElementById('connectionStatus');
