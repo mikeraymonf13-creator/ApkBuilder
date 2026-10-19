@@ -255,8 +255,26 @@ android:
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_view_binding_generator(self, mock_getenv, mock_get_bin):
-        from core.binding.generator import GenerateViewBinding
+        from core.binding.generator import GenerateViewBinding, simple_tag, layout_to_binding_class_name
+        from core.binding.resolver import snake_to_camel, normalize_id
         proj = Project(self.project_dir)
+
+        # Verify memoization on resolver and generator string helpers
+        self.assertEqual(snake_to_camel("title_text"), "titleText")
+        self.assertEqual(snake_to_camel("title_text"), "titleText")
+        self.assertGreaterEqual(snake_to_camel.cache_info().hits, 1)
+
+        self.assertEqual(normalize_id("@+id/title_text"), "title_text")
+        self.assertEqual(normalize_id("@+id/title_text"), "title_text")
+        self.assertGreaterEqual(normalize_id.cache_info().hits, 1)
+
+        self.assertEqual(simple_tag("android.widget.TextView"), "TextView")
+        self.assertEqual(simple_tag("android.widget.TextView"), "TextView")
+        self.assertGreaterEqual(simple_tag.cache_info().hits, 1)
+
+        self.assertEqual(layout_to_binding_class_name("activity_main.xml"), "ActivityMainBinding")
+        self.assertEqual(layout_to_binding_class_name("activity_main.xml"), "ActivityMainBinding")
+        self.assertGreaterEqual(layout_to_binding_class_name.cache_info().hits, 1)
 
         # When layout directory does not exist, GenerateViewBinding.start should return gracefully
         gen_task = GenerateViewBinding(proj)
