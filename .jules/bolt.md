@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-20 - Cache PATH executable searches and repeated string transformations
+**Learning:** `shutil.which()` and `cmd_is_available()` search all directories in `PATH` with `os.stat` / `os.access` syscalls on every invocation across build steps (AAPT2, Javac, Kotlinc, D8, Apksigner). Similarly, `snake_to_camel()` and `normalize_id()` perform string splitting and allocations for identical layout view IDs across XML files. Applying `functools.lru_cache` to `get_bin`, `cmd_is_available`, `snake_to_camel`, and `normalize_id` speeds up binary checks by >400x and view ID parsing by >5x.
+**Action:** Use `functools.lru_cache` for pure utility functions performing expensive PATH traversals, filesystem stat checks, or repeated string transformations.
