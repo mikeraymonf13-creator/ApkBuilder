@@ -244,9 +244,9 @@
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
-      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
-      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
+      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" tabindex="0" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" tabindex="-1" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" tabindex="-1" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
     </div>
 
     <!-- TON Tab -->
@@ -311,11 +311,40 @@
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
       });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
       btnElement.setAttribute('aria-selected', 'true');
+      btnElement.setAttribute('tabindex', '0');
+    }
+
+    // Keyboard arrow navigation for tablist
+    const tabListEl = document.querySelector('.tabs[role="tablist"]');
+    if (tabListEl) {
+      tabListEl.addEventListener('keydown', (e) => {
+        const tabs = Array.from(tabListEl.querySelectorAll('[role="tab"]'));
+        const index = tabs.indexOf(document.activeElement);
+        if (index === -1) return;
+
+        let newIndex = index;
+        if (e.key === 'ArrowRight') {
+          newIndex = (index + 1) % tabs.length;
+        } else if (e.key === 'ArrowLeft') {
+          newIndex = (index - 1 + tabs.length) % tabs.length;
+        } else if (e.key === 'Home') {
+          newIndex = 0;
+        } else if (e.key === 'End') {
+          newIndex = tabs.length - 1;
+        } else {
+          return;
+        }
+
+        e.preventDefault();
+        tabs[newIndex].focus();
+        tabs[newIndex].click();
+      });
     }
 
     function updateOnlineStatus() {
