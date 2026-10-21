@@ -235,7 +235,7 @@
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
       <div id="ton-connect"></div>
-      <div id="connectionStatus" class="offline-badge">Checking connection...</div>
+      <div id="connectionStatus" class="offline-badge" role="status" aria-live="polite">Checking connection...</div>
     </header>
 
     <div class="wallet-card">
@@ -244,9 +244,9 @@
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
-      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
-      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
-      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
+      <button class="tab-btn active" id="tab-ton" role="tab" aria-selected="true" tabindex="0" aria-controls="tonTab" onclick="switchTab('tonTab', this)">TON Transfer</button>
+      <button class="tab-btn" id="tab-jetton" role="tab" aria-selected="false" tabindex="-1" aria-controls="jettonTab" onclick="switchTab('jettonTab', this)">Jetton Transfer</button>
+      <button class="tab-btn" id="tab-activity" role="tab" aria-selected="false" tabindex="-1" aria-controls="activityTab" onclick="switchTab('activityTab', this)">Activity</button>
     </div>
 
     <!-- TON Tab -->
@@ -311,12 +311,32 @@
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.remove('active');
         btn.setAttribute('aria-selected', 'false');
+        btn.setAttribute('tabindex', '-1');
       });
 
       document.getElementById(tabId).classList.add('active');
       btnElement.classList.add('active');
       btnElement.setAttribute('aria-selected', 'true');
+      btnElement.setAttribute('tabindex', '0');
     }
+
+    document.querySelector('.tabs')?.addEventListener('keydown', (e) => {
+      const tabs = Array.from(document.querySelectorAll('.tab-btn'));
+      const idx = tabs.indexOf(document.activeElement);
+      if (idx === -1) return;
+
+      let nextIdx;
+      if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+      else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+      else if (e.key === 'Home') nextIdx = 0;
+      else if (e.key === 'End') nextIdx = tabs.length - 1;
+
+      if (nextIdx !== undefined) {
+        e.preventDefault();
+        tabs[nextIdx].focus();
+        tabs[nextIdx].click();
+      }
+    });
 
     function updateOnlineStatus() {
       const badge = document.getElementById('connectionStatus');
