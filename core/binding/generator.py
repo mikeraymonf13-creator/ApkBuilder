@@ -200,14 +200,14 @@ class GenerateViewBinding:
         os.makedirs(output_dir, exist_ok=True)
         
         root = os.path.join(self.project.res_dir, "layout")
-        if not os.path.isdir(root):
-            return
 
-        # BOLT OPTIMIZATION: Use os.scandir to avoid os.listdir list allocation and os.path.join calls
-        with os.scandir(root) as entries:
-            for entry in entries:
-                if not (entry.is_file() and entry.name.endswith(".xml")):
-                    continue
+        # BOLT OPTIMIZATION: Use os.scandir directly without os.path.isdir pre-check
+        # to avoid redundant stat system calls before layout scanning.
+        try:
+            with os.scandir(root) as entries:
+                for entry in entries:
+                    if not (entry.is_file() and entry.name.endswith(".xml")):
+                        continue
 
                 full = entry.path
                 root_xml = parse_layout(full)
@@ -220,3 +220,5 @@ class GenerateViewBinding:
 
                 with open(os.path.join(output_dir, f"{class_name}.java"), "w", encoding="utf-8") as f:
                     f.write(binding_code)
+        except OSError:
+            return

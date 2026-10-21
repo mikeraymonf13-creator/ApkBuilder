@@ -31,9 +31,9 @@ class Aapt2Task:
             filtered_libs.append(os.path.abspath(jar))
         self.libs_to_compile = filtered_libs
         
-        if os.path.isdir(bin_dir):
-            # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.join/isdir
-            # to avoid stat syscalls and string concatenations during bin_dir cleanup.
+        # BOLT OPTIMIZATION: Use os.scandir directly without os.path.isdir pre-check
+        # to eliminate redundant stat system calls during bin_dir cleanup.
+        try:
             with os.scandir(bin_dir) as entries:
                 for entry in entries:
                     if entry.name == "res":
@@ -42,6 +42,8 @@ class Aapt2Task:
                         shutil.rmtree(entry.path)
                     else:
                         os.remove(entry.path)
+        except OSError:
+            pass
         
         os.makedirs(bin_dir, exist_ok=True)
         os.makedirs(gen_dir, exist_ok=True)
@@ -104,12 +106,15 @@ class Aapt2Task:
             args += ["-A", assets_dir]
         
         #add compiled res
-        # BOLT OPTIMIZATION: Use os.scandir to avoid os.listdir list creation and os.path.join calls
-        if os.path.isdir(compiled_res_dir):
+        # BOLT OPTIMIZATION: Use os.scandir directly without os.path.isdir pre-check
+        # to avoid redundant stat system calls during compiled_res_dir scan.
+        try:
             with os.scandir(compiled_res_dir) as entries:
                 for entry in entries:
                     if entry.is_file() and entry.name.endswith(".zip"):
                         args += ["-R", entry.path]
+        except OSError:
+            pass
         
         #use to gen R.java for used libraries
         extra_packages = self.project.get_lib_package_names()

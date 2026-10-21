@@ -162,21 +162,12 @@ class Project:
         return self._cached_lib_package_names
     
     def find_files(self, base_dir, suffix):
-        # BOLT OPTIMIZATION: Use recursive os.scandir instead of os.walk to avoid
-        # intermediate tuple/list allocations and redundant os.path.join calls during
-        # filesystem traversals. Reduces directory scan overhead by ~25-30%.
+        # BOLT OPTIMIZATION: Use recursive os.scandir directly without os.stat pre-check
+        # to eliminate extra stat system calls per directory scan while catching NotADirectoryError.
         result = []
         
         if not base_dir:
             get_logger().error("-- no base dir found")
-            return result
-        
-        try:
-            st = os.stat(base_dir)
-            if not stat.S_ISDIR(st.st_mode):
-                get_logger().error("-- base dir cannot be file")
-                return result
-        except OSError:
             return result
         
         def _scan(path):
@@ -187,6 +178,9 @@ class Project:
                             _scan(entry.path)
                         elif entry.is_file(follow_symlinks=False) and entry.name.endswith(suffix):
                             result.append(entry.path)
+            except NotADirectoryError:
+                if path == base_dir:
+                    get_logger().error("-- base dir cannot be file")
             except OSError:
                 pass
 
@@ -217,9 +211,9 @@ class Project:
         return list(self._cached_lib_jars)
     
     def find_dex_files(self):
-        # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.join
-        # to leverage directory entry metadata and avoid extra stat syscalls and string concatenations.
-        if not os.path.isdir(self.dex_dir):
+        # BOLT OPTIMIZATION: Use os.scandir directly without os.path.isdir pre-check
+        # to eliminate redundant stat system calls before scanning dex_dir.
+        if not self.dex_dir:
             return []
         try:
             with os.scandir(self.dex_dir) as entries:
@@ -232,11 +226,11 @@ class Project:
             return []
     
     def find_native_libs(self):
-        # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.isdir/join
-        # to avoid redundant stat() syscalls and string concatenations per file/dir entry.
+        # BOLT OPTIMIZATION: Use os.scandir directly without os.path.isdir pre-check
+        # to avoid redundant stat system calls prior to scanning native_libs_dir.
         libs = []
     
-        if not self.native_libs_dir or not os.path.isdir(self.native_libs_dir):
+        if not self.native_libs_dir:
             return libs
 
         try:
