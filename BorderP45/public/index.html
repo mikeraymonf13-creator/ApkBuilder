@@ -235,12 +235,12 @@
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
       <div id="ton-connect"></div>
-      <div id="connectionStatus" class="offline-badge">Checking connection...</div>
+      <div id="connectionStatus" class="offline-badge" role="status" aria-live="polite">Checking connection...</div>
     </header>
 
     <div class="wallet-card">
       <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
-      <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="walletBalance" class="balance-display" aria-live="polite">— TON</div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -254,11 +254,11 @@
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
-          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" required>
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" min="0" step="any" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -274,15 +274,15 @@
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
-          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required>
+          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" required>
         </div>
         <div class="form-group">
           <label for="jettonRecipient">Recipient Address</label>
-          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" required>
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" min="0" step="any" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
