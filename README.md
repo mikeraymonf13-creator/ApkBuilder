@@ -29,6 +29,13 @@
 
 - `pip install pyyaml`
 
+## TON Studio & Web3 Integration
+
+To connect your application or environment with TON Studio and TON Connect:
+
+1. Ensure TonConnect SDK / Web3 dependencies are included in your Android project configuration or app code.
+2. Configure your project manifest and app endpoints to interface with TON Studio services.
+
 ## Building an APK
 
 To compile your project, use the builder module:
