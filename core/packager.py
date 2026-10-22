@@ -48,13 +48,25 @@ class Task:
                 apk.write(dex, name)
             
             dex_index = len(dex_files) + 1
+            # BOLT OPTIMIZATION: Track processed library directories and seen dex files.
+            # Avoids redundant directory scans when multiple JARs share a directory and
+            # prevents packaging duplicate DEX entries into the output APK ZIP archive.
+            processed_dirs = set()
+            seen_dex = set(dex_files)
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
+                if library_dir in processed_dirs:
+                    continue
+                processed_dirs.add(library_dir)
+
                 library_dex_files = self.project.find_files(library_dir, ".dex")
                 if not library_dex_files:
                     continue
                 
                 for dex in library_dex_files:
+                    if dex in seen_dex:
+                        continue
+                    seen_dex.add(dex)
                     name = f"classes{dex_index}.dex"
                     apk.write(dex, name)
                     dex_index += 1
