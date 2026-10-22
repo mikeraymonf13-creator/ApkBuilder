@@ -20,5 +20,30 @@ class TestUtil(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertTrue(path.endswith("python3"))
 
+    def test_caching_behavior(self):
+        get_bin.cache_clear()
+        cmd_is_available.cache_clear()
+
+        info1_bin = get_bin.cache_info()
+        self.assertEqual(info1_bin.hits, 0)
+
+        # First call hits original function
+        get_bin("python3")
+        info2_bin = get_bin.cache_info()
+        self.assertEqual(info2_bin.hits, 0)
+        self.assertEqual(info2_bin.misses, 1)
+
+        # Second call hits cache
+        get_bin("python3")
+        info3_bin = get_bin.cache_info()
+        self.assertEqual(info3_bin.hits, 1)
+
+        # First call to cmd_is_available uses get_bin ("python3") which hits get_bin cache
+        cmd_is_available("python3")
+        # Second call hits cmd_is_available cache
+        cmd_is_available("python3")
+        info_cmd = cmd_is_available.cache_info()
+        self.assertEqual(info_cmd.hits, 1)
+
 if __name__ == "__main__":
     unittest.main()
