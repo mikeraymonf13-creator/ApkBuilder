@@ -240,7 +240,7 @@
 
     <div class="wallet-card">
       <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
-      <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="walletBalance" class="balance-display" aria-live="polite">— TON</div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -258,7 +258,7 @@
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -282,7 +282,7 @@
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
@@ -296,7 +296,7 @@
     <!-- Activity Tab -->
     <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activity">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
-      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
+      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;" aria-live="polite">Connect your wallet to view transactions.</div>
     </div>
   </div>
 
