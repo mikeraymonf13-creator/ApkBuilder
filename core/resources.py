@@ -51,9 +51,16 @@ class Aapt2Task:
         os.makedirs(out_dir, exist_ok=True)
 
         compiled = []
+        # BOLT OPTIMIZATION: Track processed library directories to avoid executing
+        # duplicate `aapt2 compile` subprocesses when a library contains multiple JAR files.
+        processed_lib_dirs = set()
 
         for lib in self.libs_to_compile:
             lib_dir = os.path.dirname(lib)
+            if lib_dir in processed_lib_dirs:
+                continue
+            processed_lib_dirs.add(lib_dir)
+
             lib_name = os.path.basename(lib_dir)
             res = os.path.join(lib_dir, "res")
             if not os.path.isdir(res):
