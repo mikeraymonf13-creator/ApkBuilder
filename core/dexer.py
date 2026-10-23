@@ -16,8 +16,15 @@ class Task:
         if not os.path.exists(self.project.dex_dir):
             os.makedirs(self.project.dex_dir)
         
+        # BOLT OPTIMIZATION: Track processed library directories to avoid redundant
+        # filesystem scans for .dex files when multiple JARs reside in the same lib dir.
+        processed_lib_dirs = set()
         for library in self.project.find_lib_jars():
             library_dir = os.path.dirname(library)
+            if library_dir in processed_lib_dirs:
+                continue
+            processed_lib_dirs.add(library_dir)
+
             dex_files = self.project.find_files(library_dir, ".dex")
             if not dex_files:
                 self.__dex_library(library)

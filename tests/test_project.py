@@ -287,5 +287,37 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    @patch("utils.util.run")
+    def test_library_directory_deduplication(self, mock_run, mock_getenv, mock_get_bin):
+        from core.resources import Aapt2Task
+        from core.packager import Task as PackagerTask
+
+        proj = Project(self.project_dir)
+
+        # Add multiple JARs in the same library directory
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "extra.jar"), "w") as f:
+            f.write("extra jar content")
+
+        # Force fresh scan of lib jars
+        proj._cached_lib_jars = None
+        jars = proj.find_lib_jars()
+        self.assertEqual(len(jars), 2)
+
+        # Test Aapt2Task compile_libs_aapt2 deduplication
+        aapt_task = Aapt2Task(proj)
+        aapt_task.libs_to_compile = jars
+        compiled = aapt_task.compile_libs_aapt2()
+        # Should only attempt compilation once for lib1
+        self.assertEqual(len(compiled), 0)  # no res dir exists, but aapt2 run was attempted 0 times
+
+        # Create res dir under lib1
+        os.makedirs(os.path.join(lib1_dir, "res"), exist_ok=True)
+        compiled = aapt_task.compile_libs_aapt2()
+        self.assertEqual(len(compiled), 1)
+        self.assertEqual(mock_run.call_count, 1)
+
 if __name__ == "__main__":
     unittest.main()
