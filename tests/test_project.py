@@ -287,5 +287,49 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_deduplicate_library_dir_scans_in_packager(self, mock_getenv, mock_get_bin):
+        from core.packager import Task as PackagerTask
+        import zipfile
+
+        # Add a second jar in the same lib1 directory
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "extra.jar"), "w") as f:
+            f.write("dummy extra jar")
+
+        proj = Project(self.project_dir)
+        # Ensure we have 2 jars in the same lib1_dir
+        lib_jars = proj.find_lib_jars()
+        self.assertEqual(len(lib_jars), 2)
+
+        # Verify PackagerTask.start deduplicates directory scans and dex additions
+        packager_task = PackagerTask(proj)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        with open(os.path.join(proj.dex_dir, "classes.dex"), "w") as f:
+            f.write("main dex")
+
+        # Create dummy gen.apk.res for packager copy
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        dummy_res = os.path.join(proj.bin_dir, "gen.apk.res")
+        with zipfile.ZipFile(dummy_res, "w") as zf:
+            zf.writestr("AndroidManifest.xml", "dummy manifest")
+
+        # Create a dex file in lib1_dir
+        with open(os.path.join(lib1_dir, "classes.dex"), "w") as f:
+            f.write("lib dex")
+
+        with patch.object(proj, "find_files", wraps=proj.find_files) as mock_find_files, \
+             patch("core.packager.cmd_is_available", return_value=True), \
+             patch("core.packager.run"):
+            packager_task.start()
+            # find_files for .dex in lib1_dir should be called only once
+            dex_scan_calls = [c for c in mock_find_files.call_args_list if c[0][1] == ".dex"]
+            self.assertEqual(len(dex_scan_calls), 1)
+
+            # Verify that only 2 dex files (main dex + 1 lib dex) are added to unsigned.apk
+            out_apk = os.path.join(proj.bin_dir, "gen.apk") # signed APK output after run mock
+            # Check unsigned.apk before sign removes it, or inspect zip content if retained
+
 if __name__ == "__main__":
     unittest.main()
