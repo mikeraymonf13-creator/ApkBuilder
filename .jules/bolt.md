@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-23 - Directory-level deduplication in library packager
+**Learning:** `Project.find_lib_jars()` returns individual JAR paths, but `PackagerTask` scans for `.dex` files at the parent directory (`library_dir`) level. When multiple JARs share a directory, scanning per-JAR re-traverses the directory and packages duplicate DEX files into the output APK. Deduplicating by `library_dir` in `packager.py` prevents duplicate disk traversals and duplicate DEX additions. Note: Directory deduplication cannot be applied to `dexer.py` because uncompiled JARs must be dexed individually.
+**Action:** Deduplicate library directories when packaging DEX files while ensuring per-file tasks remain granular.
