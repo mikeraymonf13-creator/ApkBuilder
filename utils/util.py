@@ -26,6 +26,12 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+import functools
+
+# BOLT OPTIMIZATION: Memoize binary availability checks to avoid redundant
+# disk/stat syscalls (os.access/os.path.isfile) and PATH traversals (shutil.which)
+# during build step initializations and executions.
+@functools.lru_cache(maxsize=32)
 def cmd_is_available(cmd):
     if not cmd:
         return False
