@@ -21,6 +21,8 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'tabindex="0"', res.data)
         self.assertIn(b'tabindex="-1"', res.data)
         self.assertIn(b'ArrowRight', res.data)
+        self.assertIn(b'btn-copy', res.data)
+        self.assertIn(b'copyToClipboard', res.data)
 
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')

@@ -12,6 +12,8 @@
     .balance{font-size:38px;font-weight:700;margin:10px 0}.address{font-size:13px;word-break:break-all;color:#aeb1b8}
     .row{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #292b31}.row:last-child{border:0}
     #ton-connect{min-width:150px}button{border:0;border-radius:12px;padding:12px 16px}
+    .btn-copy{background:#292b31;color:#f4f4f5;padding:4px 8px;font-size:12px;border-radius:6px;cursor:pointer;transition:background 0.2s}
+    .btn-copy:hover{background:#3a3d46}
     .tx-item{padding:10px 0;border-bottom:1px solid #292b31;display:flex;justify-content:space-between;align-items:center}
     .tx-item:last-child{border:0}
   </style>
@@ -21,7 +23,10 @@
     <div class="top"><h1>TON Wallet</h1><div id="ton-connect"></div></div>
     <section class="card">
       <div class="muted">Connected wallet</div>
-      <div id="address" class="address" style="margin-top:8px">Not connected</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+        <span id="address" class="address">Not connected</span>
+        <button id="copyAddressBtn" type="button" class="btn-copy" style="display:none;" aria-label="Copy wallet address to clipboard" onclick="copyToClipboard(currentAddress, this)">Copy</button>
+      </div>
       <div class="muted" style="margin-top:24px">Balance</div>
       <div id="balance" class="balance">— TON</div>
     </section>
@@ -36,7 +41,21 @@
       buttonRootId: 'ton-connect'
     });
 
+    let currentAddress = '';
+
     function short(a){ return a ? a.slice(0,8)+'…'+a.slice(-8) : ''; }
+
+    function copyToClipboard(text, btnElement) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btnElement.textContent;
+        btnElement.textContent = 'Copied!';
+        btnElement.setAttribute('aria-live', 'polite');
+        setTimeout(() => {
+          btnElement.textContent = originalText;
+        }, 2000);
+      }).catch(() => {});
+    }
 
     async function loadTonData(address) {
       try {
@@ -57,7 +76,10 @@
               <div class="tx-item">
                 <div>
                   <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:12px;color:#aeb1b8">${tx.hash || ''}</div>
+                  <div style="font-size:12px;color:#aeb1b8;display:flex;align-items:center;gap:6px;margin-top:2px;">
+                    <span>${tx.hash || ''}</span>
+                    ${tx.hash ? `<button type="button" class="btn-copy" aria-label="Copy transaction hash to clipboard" onclick="copyToClipboard('${tx.hash}', this)">Copy</button>` : ''}
+                  </div>
                 </div>
                 <div>${tx.amount || ''}</div>
               </div>
@@ -73,7 +95,10 @@
 
     ui.onStatusChange(wallet => {
       const address = wallet?.account?.address || '';
+      currentAddress = address;
+      const copyBtn = document.getElementById('copyAddressBtn');
       document.getElementById('address').textContent = address ? short(address) : 'Not connected';
+      if (copyBtn) copyBtn.style.display = address ? 'inline-block' : 'none';
       if (wallet && address) {
         document.getElementById('activity').textContent = 'Loading activity...';
         loadTonData(address);
