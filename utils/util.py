@@ -26,6 +26,11 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+from functools import lru_cache
+
+# BOLT OPTIMIZATION: Memoize binary/executable existence and permission checks
+# across build task invocations to eliminate repeated `os.access`/`shutil.which` syscalls.
+@lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
