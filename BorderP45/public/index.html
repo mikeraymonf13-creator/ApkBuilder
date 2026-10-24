@@ -227,6 +227,20 @@
     .tx-item:last-child {
       border-bottom: none;
     }
+
+    .btn-copy {
+      background: var(--border-color);
+      color: var(--text-main);
+      border: none;
+      padding: 3px 8px;
+      font-size: 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-copy:hover {
+      background-color: var(--accent-hover);
+    }
   </style>
 </head>
 <body>
@@ -340,6 +354,18 @@
       });
     }
 
+    function copyToClipboard(text, btnElement) {
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btnElement.textContent;
+        btnElement.textContent = 'Copied!';
+        btnElement.setAttribute('aria-live', 'polite');
+        setTimeout(() => {
+          btnElement.textContent = originalText;
+        }, 2000);
+      }).catch(() => {});
+    }
+
     function updateOnlineStatus() {
       const badge = document.getElementById('connectionStatus');
       if (navigator.onLine) {
@@ -388,7 +414,10 @@
               <div class="tx-item">
                 <div>
                   <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${tx.hash || ''}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span>${tx.hash || ''}</span>
+                    ${tx.hash ? `<button type="button" class="btn-copy" aria-label="Copy transaction hash to clipboard" onclick="copyToClipboard('${tx.hash}', this)">Copy</button>` : ''}
+                  </div>
                 </div>
                 <div>${tx.amount || ''}</div>
               </div>
