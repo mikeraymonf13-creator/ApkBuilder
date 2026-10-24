@@ -126,6 +126,13 @@
       margin-bottom: 18px;
     }
 
+    .form-hint {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
     label {
       display: block;
       margin-bottom: 8px;
@@ -254,15 +261,16 @@
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
-          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required autocomplete="off" spellcheck="false" aria-describedby="tonRecipientHint">
+          <small id="tonRecipientHint" class="form-hint">Enter a valid TON address (e.g. starting with EQ or UQ)</small>
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" step="any" min="0" inputmode="decimal" placeholder="0.00" required autocomplete="off">
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
-          <input type="text" id="tonComment" placeholder="Transfer memo">
+          <input type="text" id="tonComment" placeholder="Transfer memo" autocomplete="off">
         </div>
         <button type="submit" class="btn-submit">Send TON</button>
       </form>
@@ -274,19 +282,21 @@
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
-          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required>
+          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required autocomplete="off" spellcheck="false" aria-describedby="jettonMasterHint">
+          <small id="jettonMasterHint" class="form-hint">Address of the Jetton token master contract</small>
         </div>
         <div class="form-group">
           <label for="jettonRecipient">Recipient Address</label>
-          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required autocomplete="off" spellcheck="false" aria-describedby="jettonRecipientHint">
+          <small id="jettonRecipientHint" class="form-hint">Enter a valid TON address (e.g. starting with EQ or UQ)</small>
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" step="any" min="0" inputmode="decimal" placeholder="0.00" required autocomplete="off">
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
-          <input type="text" id="jettonComment" placeholder="Transfer memo">
+          <input type="text" id="jettonComment" placeholder="Transfer memo" autocomplete="off">
         </div>
         <button type="submit" class="btn-submit">Send Jetton</button>
       </form>
