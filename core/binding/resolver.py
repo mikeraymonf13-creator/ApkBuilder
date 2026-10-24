@@ -7,22 +7,22 @@ A = f"{{{ANDROID_NS}}}"
 A_ID = f"{{{ANDROID_NS}}}id"
 
 def snake_to_camel(s):
-    if "_" not in s:
+    if not s or "_" not in s:
         return s
 
-    partes = [p for p in s.split("_") if p]
-    if not partes:
+    parts = [p for p in s.split("_") if p]
+    if not parts:
         return ""
 
     if s.startswith("_"):
-        return ''.join(p[0].upper() + p[1:] for p in partes)
-    else:
-        return partes[0] + ''.join(p[0].upper() + p[1:] for p in partes[1:])
+        return "".join(p.capitalize() for p in parts)
+    return parts[0] + "".join(p.capitalize() for p in parts[1:])
 
 def normalize_id(value):
     if not value:
         return None
-    return value.split("/")[-1]
+    # BOLT OPTIMIZATION: Use rsplit with maxsplit=1 to avoid full splitting array allocations.
+    return value.rsplit("/", 1)[-1]
 
 def bind_views(elem, child=False):
     view_id = normalize_id(elem.get(A_ID))

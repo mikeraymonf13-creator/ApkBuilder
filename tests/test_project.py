@@ -287,5 +287,30 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_binding_utils(self):
+        from core.binding.generator import layout_to_binding_class_name, simple_tag, generate_header
+        from core.binding.resolver import snake_to_camel, normalize_id
+
+        self.assertEqual(layout_to_binding_class_name("activity_main.xml"), "ActivityMainBinding")
+        self.assertEqual(layout_to_binding_class_name("item_view"), "ItemViewBinding")
+
+        self.assertEqual(simple_tag("android.widget.TextView"), "TextView")
+        self.assertEqual(simple_tag("TextView"), "TextView")
+        self.assertIsNone(simple_tag(None))
+
+        self.assertEqual(snake_to_camel("main_title_text"), "mainTitleText")
+        self.assertEqual(snake_to_camel("_header_layout"), "HeaderLayout")
+        self.assertEqual(snake_to_camel("title"), "title")
+        self.assertEqual(snake_to_camel(""), "")
+
+        self.assertEqual(normalize_id("@+id/my_button"), "my_button")
+        self.assertEqual(normalize_id("my_button"), "my_button")
+        self.assertIsNone(normalize_id(None))
+
+        header = generate_header("com.example.app.databinding", {"android.widget.TextView"})
+        self.assertIn("package com.example.app.databinding;", header)
+        self.assertIn("import com.example.app.R;", header)
+        self.assertIn("import android.widget.TextView;", header)
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,14 +13,17 @@ DEFAULT_IMPORTS = {
 }
 
 def layout_to_binding_class_name(filename):
-    name = filename.replace(".xml", "")
-    parts = name.split("_")
+    # BOLT OPTIMIZATION: Use removesuffix instead of replace to avoid searching
+    # the entire string and risking erroneous replacements on layout names containing '.xml'.
+    name = filename.removesuffix(".xml")
+    parts = [p for p in name.split("_") if p]
     return "".join(p.capitalize() for p in parts) + "Binding"
 
 def simple_tag(tag):
     if not tag:
         return None
-    return tag.split(".")[-1]
+    # BOLT OPTIMIZATION: Use rsplit with maxsplit=1 to avoid full splitting array allocations.
+    return tag.rsplit(".", 1)[-1]
 
 def resolve_view_class(tag):
     if "." in tag:
@@ -29,25 +32,16 @@ def resolve_view_class(tag):
 
 def infer_view_imports(views):
     imports = set(DEFAULT_IMPORTS)
-    
-    for v in views:
-        tag = v.tag
-        view_class = resolve_view_class(tag)
-        if not view_class:
-            continue
-        
-        if view_class in imports:
-            continue
-        
-        imports.add(view_class)
-    
+    imports.update(v.tag for v in views if "." in v.tag)
     return imports
 
 def generate_header(package, imports):
+    # BOLT OPTIMIZATION: Use removesuffix for direct O(1) package name slicing.
+    base_package = package.removesuffix(".databinding")
     lines = []
     lines.append("// Generated file. Do not modify.")
     lines.append(f"package {package};\n")
-    lines.append(f"import {package.replace(".databinding", "")}.R;")
+    lines.append(f"import {base_package}.R;")
     
     for imp in sorted(imports):
         lines.append(f"import {imp};")
@@ -114,10 +108,11 @@ def generate_inflate_methods(class_name, layout_name):
 
 def generate_bind(class_name, root_type, root_id, views):
     lines = []
+    root_tag = simple_tag(root_type)
 
     lines.append(f"    public static {class_name} bind(View view) {{")
     lines.append(
-        f"        {simple_tag(root_type)} {root_id} = ({simple_tag(root_type)}) view;"
+        f"        {root_tag} {root_id} = ({root_tag}) view;"
     )
 
     for v in views:
