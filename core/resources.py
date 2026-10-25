@@ -22,9 +22,16 @@ class Aapt2Task:
         if os.path.exists(gen_dir):
             shutil.rmtree(gen_dir)
         
+        # BOLT OPTIMIZATION: Deduplicate library directories so we don't compile
+        # resources for the same library multiple times when it contains multiple JARs.
         filtered_libs = []
+        visited_lib_dirs = set()
         for jar in self.libs_to_compile:
             lib_dir = os.path.dirname(jar)
+            if lib_dir in visited_lib_dirs:
+                continue
+            visited_lib_dirs.add(lib_dir)
+
             lib_name = os.path.basename(lib_dir)
             if os.path.exists(os.path.join(compiled_res_dir, lib_name + ".zip")):
                 continue
@@ -51,9 +58,14 @@ class Aapt2Task:
         os.makedirs(out_dir, exist_ok=True)
 
         compiled = []
+        visited_lib_dirs = set()
 
         for lib in self.libs_to_compile:
             lib_dir = os.path.dirname(lib)
+            if lib_dir in visited_lib_dirs:
+                continue
+            visited_lib_dirs.add(lib_dir)
+
             lib_name = os.path.basename(lib_dir)
             res = os.path.join(lib_dir, "res")
             if not os.path.isdir(res):
