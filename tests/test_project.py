@@ -287,5 +287,57 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_multi_jar_library_deduplication(self, mock_getenv, mock_get_bin):
+        from core.resources import Aapt2Task
+        from core.packager import Task as PackagerTask
+        import zipfile
+
+        # Add a second jar in lib1 directory
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "extra.jar"), "w") as f:
+            f.write("extra jar content")
+
+        proj = Project(self.project_dir)
+        jars = proj.find_lib_jars()
+        self.assertEqual(len(jars), 2)  # classes.jar and extra.jar in lib1_dir
+
+        # Test Aapt2Task prepare deduplication
+        aapt_task = Aapt2Task(proj)
+        with patch("core.resources.cmd_is_available", return_value=True):
+            aapt_task.prepare()
+            # self.libs_to_compile should contain only 1 entry for lib1 directory
+            self.assertEqual(len(aapt_task.libs_to_compile), 1)
+
+        # Test Packager Task library dex deduplication
+        # Create a dex file in lib1
+        dex_in_lib1 = os.path.join(lib1_dir, "classes.dex")
+        with open(dex_in_lib1, "w") as f:
+            f.write("dex payload")
+
+        # Create main dex file in project dex_dir
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        with open(os.path.join(proj.dex_dir, "classes.dex"), "w") as f:
+            f.write("main dex payload")
+
+        # Create dummy gen.apk.res in bin_dir
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        res_apk = os.path.join(proj.bin_dir, "gen.apk.res")
+        with zipfile.ZipFile(res_apk, "w") as z:
+            z.writestr("AndroidManifest.xml", "dummy manifest")
+
+        packager_task = PackagerTask(proj)
+        with patch.object(packager_task, "_Task__sign_apk") as mock_sign:
+            packager_task.start()
+
+            unsigned_apk = os.path.join(proj.bin_dir, "unsigned.apk")
+            with zipfile.ZipFile(unsigned_apk, "r") as z:
+                namelist = z.namelist()
+                # Should contain classes.dex and classes2.dex (lib1 dex added ONCE, not twice)
+                self.assertIn("classes.dex", namelist)
+                self.assertIn("classes2.dex", namelist)
+                self.assertNotIn("classes3.dex", namelist)
+
 if __name__ == "__main__":
     unittest.main()
