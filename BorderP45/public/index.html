@@ -239,8 +239,16 @@
     </header>
 
     <div class="wallet-card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+        <div>
+          <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet</div>
+          <div id="walletAddress" style="font-size:0.85rem; color: var(--text-main); font-family: monospace; word-break: break-all; margin-top:2px;">Not connected</div>
+        </div>
+        <button id="copyAddressBtn" type="button" aria-label="Copy connected wallet address" title="Copy wallet address" style="display:none; background:var(--border-color); border:none; color:var(--text-main); border-radius:6px; padding:6px 12px; cursor:pointer; font-size:0.8rem; font-weight:500; transition: background-color 0.2s; white-space:nowrap; margin-left:12px;" onclick="copyWalletAddress()">Copy</button>
+      </div>
       <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
       <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="copyToast" aria-live="polite" style="font-size:0.8rem; color:var(--success-color); margin-top:4px; display:none;"></div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -402,10 +410,46 @@
       }
     }
 
+    let currentWalletAddress = '';
+    let copyTimeout = null;
+
+    function shortAddress(addr) {
+      if (!addr) return 'Not connected';
+      return addr.slice(0, 6) + '…' + addr.slice(-6);
+    }
+
+    async function copyWalletAddress() {
+      if (!currentWalletAddress) return;
+      const btn = document.getElementById('copyAddressBtn');
+      const toast = document.getElementById('copyToast');
+      try {
+        await navigator.clipboard.writeText(currentWalletAddress);
+        if (copyTimeout) clearTimeout(copyTimeout);
+        btn.textContent = 'Copied!';
+        toast.textContent = 'Wallet address copied to clipboard!';
+        toast.style.display = 'block';
+        copyTimeout = setTimeout(() => {
+          btn.textContent = 'Copy';
+          toast.style.display = 'none';
+          copyTimeout = null;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy address:', err);
+      }
+    }
+
     tonConnectUI.onStatusChange(wallet => {
       if (wallet && wallet.account && wallet.account.address) {
+        currentWalletAddress = wallet.account.address;
+        document.getElementById('walletAddress').textContent = shortAddress(currentWalletAddress);
+        document.getElementById('walletAddress').title = currentWalletAddress;
+        document.getElementById('copyAddressBtn').style.display = 'inline-block';
         fetchTonAccountInfo(wallet.account.address);
       } else {
+        currentWalletAddress = '';
+        document.getElementById('walletAddress').textContent = 'Not connected';
+        document.getElementById('walletAddress').removeAttribute('title');
+        document.getElementById('copyAddressBtn').style.display = 'none';
         document.getElementById('walletBalance').textContent = '— TON';
         document.getElementById('activityList').textContent = 'Connect your wallet to view transactions.';
       }
