@@ -1,3 +1,4 @@
+from functools import lru_cache
 from core.binding.model import ViewNode
 from core.binding.parser import parse_layout
 from core.binding.resolver import bind_views
@@ -12,11 +13,15 @@ DEFAULT_IMPORTS = {
     "android.widget.*"
 }
 
+# BOLT OPTIMIZATION: Memoize string transformations to eliminate redundant
+# splits and formatting across layout files and view nodes.
+@lru_cache(maxsize=256)
 def layout_to_binding_class_name(filename):
     name = filename.replace(".xml", "")
     parts = name.split("_")
     return "".join(p.capitalize() for p in parts) + "Binding"
 
+@lru_cache(maxsize=256)
 def simple_tag(tag):
     if not tag:
         return None
