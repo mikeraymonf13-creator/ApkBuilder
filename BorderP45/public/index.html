@@ -75,6 +75,25 @@
       margin-bottom: 20px;
     }
 
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: var(--border-color);
+      color: var(--text-main);
+    }
+
     .balance-display {
       font-size: 1.5rem;
       font-weight: 700;
@@ -239,8 +258,17 @@
     </header>
 
     <div class="wallet-card">
-      <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet</div>
+        <button id="copyAddressBtn" class="copy-btn" style="display:none;" aria-label="Copy wallet address" title="Copy wallet address" onclick="copyWalletAddress()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span id="copyBtnText">Copy</span>
+        </button>
+      </div>
+      <div id="walletAddress" style="font-size:0.9rem; font-weight:500; color:var(--text-main); margin-top:4px; font-family:monospace;">Not connected</div>
+      <div style="font-size:0.85rem; color: var(--text-muted); margin-top:12px;">Connected Wallet Balance</div>
       <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="copyToast" aria-live="polite" style="position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0);"></div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -402,10 +430,41 @@
       }
     }
 
+    let currentWalletAddress = '';
+
+    function shortAddress(addr) {
+      return addr ? addr.slice(0, 6) + '...' + addr.slice(-6) : '';
+    }
+
+    async function copyWalletAddress() {
+      if (!currentWalletAddress) return;
+      try {
+        await navigator.clipboard.writeText(currentWalletAddress);
+        const copyText = document.getElementById('copyBtnText');
+        const copyToast = document.getElementById('copyToast');
+        if (copyText) copyText.textContent = 'Copied!';
+        if (copyToast) copyToast.textContent = 'Wallet address copied to clipboard';
+        setTimeout(() => {
+          if (copyText) copyText.textContent = 'Copy';
+          if (copyToast) copyToast.textContent = '';
+        }, 2000);
+      } catch (e) {
+        console.error('Failed to copy address', e);
+      }
+    }
+
     tonConnectUI.onStatusChange(wallet => {
+      const copyBtn = document.getElementById('copyAddressBtn');
+      const addrEl = document.getElementById('walletAddress');
       if (wallet && wallet.account && wallet.account.address) {
+        currentWalletAddress = wallet.account.address;
+        if (addrEl) addrEl.textContent = shortAddress(currentWalletAddress);
+        if (copyBtn) copyBtn.style.display = 'inline-flex';
         fetchTonAccountInfo(wallet.account.address);
       } else {
+        currentWalletAddress = '';
+        if (addrEl) addrEl.textContent = 'Not connected';
+        if (copyBtn) copyBtn.style.display = 'none';
         document.getElementById('walletBalance').textContent = '— TON';
         document.getElementById('activityList').textContent = 'Connect your wallet to view transactions.';
       }
