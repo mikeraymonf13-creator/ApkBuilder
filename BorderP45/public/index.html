@@ -178,6 +178,21 @@
       cursor: not-allowed;
     }
 
+    .btn-spinner {
+      display: inline-block;
+      width: 0.9em;
+      height: 0.9em;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spinner-rotate 0.75s linear infinite;
+      vertical-align: text-bottom;
+      margin-right: 6px;
+    }
+    @keyframes spinner-rotate {
+      to { transform: rotate(360deg); }
+    }
+
     .status-card {
       margin-top: 20px;
       padding: 14px;
@@ -239,7 +254,9 @@
     </header>
 
     <div class="wallet-card">
-      <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
+      <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet</div>
+      <div id="walletAddress" style="font-size:0.9rem; font-family:monospace; color:var(--text-main); margin-top:2px;" aria-live="polite">Not connected</div>
+      <div style="font-size:0.85rem; color: var(--text-muted); margin-top:12px;">Connected Wallet Balance</div>
       <div id="walletBalance" class="balance-display">— TON</div>
     </div>
 
@@ -258,7 +275,7 @@
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -282,7 +299,7 @@
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
@@ -402,10 +419,15 @@
       }
     }
 
+    function shortAddr(a) { return a ? a.slice(0, 6) + '…' + a.slice(-6) : 'Not connected'; }
+
     tonConnectUI.onStatusChange(wallet => {
+      const addrEl = document.getElementById('walletAddress');
       if (wallet && wallet.account && wallet.account.address) {
+        if (addrEl) addrEl.textContent = shortAddr(wallet.account.address);
         fetchTonAccountInfo(wallet.account.address);
       } else {
+        if (addrEl) addrEl.textContent = 'Not connected';
         document.getElementById('walletBalance').textContent = '— TON';
         document.getElementById('activityList').textContent = 'Connect your wallet to view transactions.';
       }
@@ -421,7 +443,7 @@
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
       btn.disabled = true;
-      btn.textContent = 'Sending TON...';
+      btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> Sending TON...';
       form.setAttribute('aria-busy', 'true');
 
       const recipient = document.getElementById('tonRecipient').value;
@@ -465,7 +487,7 @@
       statusDiv.className = 'status-card';
       statusDiv.style.display = 'none';
       btn.disabled = true;
-      btn.textContent = 'Sending Jetton...';
+      btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span> Sending Jetton...';
       form.setAttribute('aria-busy', 'true');
 
       const jettonMaster = document.getElementById('jettonMaster').value;
