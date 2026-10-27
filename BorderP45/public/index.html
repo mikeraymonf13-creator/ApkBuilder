@@ -150,6 +150,25 @@
       border-color: var(--accent-color);
     }
 
+    input[aria-invalid="true"] {
+      border-color: var(--error-color);
+    }
+
+    .field-hint {
+      font-size: 0.8rem;
+      margin-top: 4px;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .field-hint.error {
+      color: var(--error-color);
+    }
+
+    .field-hint.valid {
+      color: var(--success-color);
+    }
+
     button.btn-submit {
       width: 100%;
       padding: 14px;
@@ -254,7 +273,8 @@
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
-          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required aria-describedby="tonRecipientHint" oninput="validateAddress(this, 'tonRecipientHint')">
+          <small id="tonRecipientHint" class="field-hint" aria-live="polite">TON user or wallet address (starts with EQ or UQ)</small>
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
@@ -278,7 +298,8 @@
         </div>
         <div class="form-group">
           <label for="jettonRecipient">Recipient Address</label>
-          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required aria-describedby="jettonRecipientHint" oninput="validateAddress(this, 'jettonRecipientHint')">
+          <small id="jettonRecipientHint" class="field-hint" aria-live="polite">TON recipient address (starts with EQ or UQ)</small>
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
@@ -305,6 +326,28 @@
       manifestUrl: location.origin + '/tonconnect-manifest.json',
       buttonRootId: 'ton-connect'
     });
+
+    function validateAddress(input, hintId) {
+      const hint = document.getElementById(hintId);
+      const val = input.value.trim();
+      if (!val) {
+        input.removeAttribute('aria-invalid');
+        hint.textContent = 'TON user or wallet address (starts with EQ or UQ)';
+        hint.className = 'field-hint';
+      } else if (!val.startsWith('EQ') && !val.startsWith('UQ')) {
+        input.setAttribute('aria-invalid', 'true');
+        hint.textContent = '⚠️ Address usually starts with EQ or UQ';
+        hint.className = 'field-hint error';
+      } else if (val.length < 48) {
+        input.setAttribute('aria-invalid', 'true');
+        hint.textContent = `⚠️ Incomplete address (${val.length}/48 chars)`;
+        hint.className = 'field-hint error';
+      } else {
+        input.setAttribute('aria-invalid', 'false');
+        hint.textContent = '✓ Valid address format';
+        hint.className = 'field-hint valid';
+      }
+    }
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
