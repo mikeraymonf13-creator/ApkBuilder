@@ -227,6 +227,22 @@
     .tx-item:last-child {
       border-bottom: none;
     }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-copy:hover {
+      color: var(--text-main);
+      border-color: #38bdf8;
+    }
   </style>
 </head>
 <body>
@@ -240,7 +256,7 @@
 
     <div class="wallet-card">
       <div style="font-size:0.85rem; color: var(--text-muted);">Connected Wallet Balance</div>
-      <div id="walletBalance" class="balance-display">— TON</div>
+      <div id="walletBalance" class="balance-display" aria-live="polite">— TON</div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Transfer type tabs">
@@ -296,7 +312,7 @@
     <!-- Activity Tab -->
     <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activity">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
-      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
+      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;" aria-live="polite">Connect your wallet to view transactions.</div>
     </div>
   </div>
 
@@ -355,6 +371,21 @@
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
+    function copyTxHash(btn, hash) {
+      if (!hash) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        const origText = btn.textContent;
+        btn.textContent = '✓ Copied';
+        btn.style.color = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = origText;
+          btn.style.color = '';
+        }, 1800);
+      }).catch(err => {
+        console.error('Copy failed:', err);
+      });
+    }
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -384,15 +415,21 @@
           const txData = await txRes.json();
           const activityEl = document.getElementById('activityList');
           if (txData.transactions && txData.transactions.length > 0) {
-            activityEl.innerHTML = txData.transactions.map(tx => `
+            activityEl.innerHTML = txData.transactions.map(tx => {
+              const hash = tx.hash || '';
+              return `
               <div class="tx-item">
                 <div>
                   <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${tx.hash || ''}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center;">
+                    <span>${hash}</span>
+                    ${hash ? `<button type="button" class="btn-copy" aria-label="Copy transaction hash ${hash}" onclick="copyTxHash(this, '${hash}')">Copy</button>` : ''}
+                  </div>
                 </div>
                 <div>${tx.amount || ''}</div>
               </div>
-            `).join('');
+            `;
+            }).join('');
           } else {
             activityEl.textContent = 'No recent transactions found.';
           }
