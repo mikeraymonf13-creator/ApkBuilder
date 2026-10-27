@@ -287,5 +287,30 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_view_id_resolver_caching(self):
+        from core.binding.resolver import snake_to_camel, normalize_id
+
+        # Test normalize_id correctness and caching
+        self.assertIsNone(normalize_id(None))
+        self.assertEqual(normalize_id("@+id/button_submit"), "button_submit")
+        self.assertEqual(normalize_id("@id/main_layout"), "main_layout")
+
+        norm_info = normalize_id.cache_info()
+        self.assertGreater(norm_info.hits + norm_info.misses, 0)
+
+        # Test snake_to_camel correctness and caching
+        self.assertEqual(snake_to_camel("button_submit"), "buttonSubmit")
+        self.assertEqual(snake_to_camel("main_layout"), "mainLayout")
+        self.assertEqual(snake_to_camel("rootView"), "rootView")
+        self.assertEqual(snake_to_camel("_leading"), "Leading")
+
+        # Calling again should trigger LRU cache hit
+        camel_1 = snake_to_camel("button_submit")
+        camel_2 = snake_to_camel("button_submit")
+        self.assertEqual(camel_1, camel_2)
+
+        cache_info = snake_to_camel.cache_info()
+        self.assertGreater(cache_info.hits, 0)
+
 if __name__ == "__main__":
     unittest.main()
