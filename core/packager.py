@@ -48,8 +48,16 @@ class Task:
                 apk.write(dex, name)
             
             dex_index = len(dex_files) + 1
+            # BOLT OPTIMIZATION: Track visited library directories to avoid running
+            # redundant find_files filesystem traversals and writing duplicate .dex
+            # files into the APK when a library contains multiple jar files.
+            visited_dirs = set()
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
+                if library_dir in visited_dirs:
+                    continue
+                visited_dirs.add(library_dir)
+
                 library_dex_files = self.project.find_files(library_dir, ".dex")
                 if not library_dex_files:
                     continue

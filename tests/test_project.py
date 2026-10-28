@@ -287,5 +287,50 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    @patch("shutil.copy2")
+    @patch("core.packager.Task._Task__sign_apk")
+    @patch("zipfile.ZipFile")
+    def test_packager_visited_dirs_for_multi_jar_library(self, mock_zipfile_cls, mock_sign_apk, mock_copy2, mock_getenv, mock_get_bin):
+        from core.packager import Task as PackagerTask
+        proj = Project(self.project_dir)
+
+        # Set up dex_dir with main classes.dex
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        with open(os.path.join(proj.dex_dir, "classes.dex"), "w") as f:
+            f.write("main dex")
+
+        # Create a multi-jar library directory with two .jar files and one .dex file
+        multi_lib_dir = os.path.join(self.libs_dir, "multilib")
+        os.makedirs(multi_lib_dir, exist_ok=True)
+        with open(os.path.join(multi_lib_dir, "a.jar"), "w") as f:
+            f.write("jar a")
+        with open(os.path.join(multi_lib_dir, "b.jar"), "w") as f:
+            f.write("jar b")
+        with open(os.path.join(multi_lib_dir, "libclasses.dex"), "w") as f:
+            f.write("lib dex")
+
+        mock_apk = MagicMock()
+        mock_zipfile_cls.return_value.__enter__.return_value = mock_apk
+
+        task = PackagerTask(proj)
+
+        with patch.object(proj, "find_files", wraps=proj.find_files) as mock_find_files:
+            task.start()
+
+            # find_files should only be called ONCE for multi_lib_dir, not twice
+            lib_dir_calls = [
+                call_args[0][0] for call_args in mock_find_files.call_args_list
+                if call_args[0][0] == multi_lib_dir
+            ]
+            self.assertEqual(len(lib_dir_calls), 1)
+
+            # Check that apk.write was called for main classes.dex and once for classes2.dex
+            written_names = [call[0][1] for call in mock_apk.write.call_args_list]
+            self.assertIn("classes.dex", written_names)
+            self.assertIn("classes2.dex", written_names)
+            self.assertNotIn("classes3.dex", written_names)
+
 if __name__ == "__main__":
     unittest.main()

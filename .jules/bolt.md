@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-28 - Prevent duplicate library directory scans and packaging
+**Learning:** Iterating over `find_lib_jars()` and calling `find_files(os.path.dirname(jar), ".dex")` without tracking visited directories causes redundant directory traversals and duplicates `.dex` files in output APKs when libraries contain multiple `.jar` files.
+**Action:** Use a `visited_dirs` set when processing library parent directories in multi-jar build and packaging tasks.
