@@ -227,6 +227,21 @@
     .tx-item:last-child {
       border-bottom: none;
     }
+
+    .copy-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--accent-color);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background-color: var(--accent-color);
+      color: #ffffff;
+    }
   </style>
 </head>
 <body>
@@ -340,6 +355,19 @@
       });
     }
 
+    function copyTxHash(hash, btn) {
+      if (!hash) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        const origText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.color = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = origText;
+          btn.style.color = '';
+        }, 1500);
+      }).catch(err => console.error('Copy failed:', err));
+    }
+
     function updateOnlineStatus() {
       const badge = document.getElementById('connectionStatus');
       if (navigator.onLine) {
@@ -384,16 +412,25 @@
           const txData = await txRes.json();
           const activityEl = document.getElementById('activityList');
           if (txData.transactions && txData.transactions.length > 0) {
-            activityEl.innerHTML = txData.transactions.map(tx => `
-              <div class="tx-item">
+            activityEl.setAttribute('role', 'list');
+            activityEl.innerHTML = txData.transactions.map(tx => {
+              const isReceived = tx.amount && tx.amount.startsWith('+');
+              const amountColor = isReceived ? '#4ade80' : 'var(--text-main)';
+              const shortHash = tx.hash && tx.hash.length > 18 ? tx.hash.slice(0, 8) + '...' + tx.hash.slice(-6) : (tx.hash || '');
+              return `
+              <div class="tx-item" role="listitem">
                 <div>
-                  <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${tx.hash || ''}</div>
+                  <strong style="color:var(--text-main);">${tx.type || 'Transaction'}</strong>
+                  <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; gap:6px; margin-top:2px;">
+                    <span title="${tx.hash || ''}">${shortHash}</span>
+                    ${tx.hash ? `<button type="button" class="copy-btn" aria-label="Copy transaction hash ${tx.hash}" onclick="copyTxHash('${tx.hash}', this)">Copy</button>` : ''}
+                  </div>
                 </div>
-                <div>${tx.amount || ''}</div>
+                <div style="font-weight:600; color:${amountColor};">${tx.amount || ''}</div>
               </div>
-            `).join('');
+            `;}).join('');
           } else {
+            activityEl.removeAttribute('role');
             activityEl.textContent = 'No recent transactions found.';
           }
         }
@@ -438,7 +475,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small style="display:inline-flex; align-items:center; gap:6px; margin-top:4px;">Tx Hash: ${result.tx_hash} <button type="button" class="copy-btn" aria-label="Copy transaction hash ${result.tx_hash}" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -483,7 +520,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small style="display:inline-flex; align-items:center; gap:6px; margin-top:4px;">Tx Hash: ${result.tx_hash} <button type="button" class="copy-btn" aria-label="Copy transaction hash ${result.tx_hash}" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
