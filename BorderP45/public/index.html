@@ -258,7 +258,7 @@
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" step="any" min="0.000000001" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -266,7 +266,7 @@
         </div>
         <button type="submit" class="btn-submit">Send TON</button>
       </form>
-      <div id="tonStatus" class="status-card" aria-live="polite"></div>
+      <div id="tonStatus" class="status-card" role="status" aria-live="polite"></div>
     </div>
 
     <!-- Jetton Tab -->
@@ -282,7 +282,7 @@
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" step="any" min="0.000000001" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
@@ -290,7 +290,7 @@
         </div>
         <button type="submit" class="btn-submit">Send Jetton</button>
       </form>
-      <div id="jettonStatus" class="status-card" aria-live="polite"></div>
+      <div id="jettonStatus" class="status-card" role="status" aria-live="polite"></div>
     </div>
 
     <!-- Activity Tab -->
@@ -305,6 +305,15 @@
       manifestUrl: location.origin + '/tonconnect-manifest.json',
       buttonRootId: 'ton-connect'
     });
+
+    function copyTxHash(hash, btnEl) {
+      if (!navigator.clipboard) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        const original = btnEl.textContent;
+        btnEl.textContent = 'Copied!';
+        setTimeout(() => { btnEl.textContent = original; }, 2000);
+      }).catch(() => {});
+    }
 
     function switchTab(tabId, btnElement) {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -438,7 +447,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><div style="margin-top:6px; display:flex; align-items:center; gap:8px;"><small style="word-break:break-all;">Tx Hash: ${result.tx_hash}</small><button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)" style="padding:2px 8px; font-size:0.75rem; background:#334155; color:#f8fafc; border:none; border-radius:4px; cursor:pointer;">Copy</button></div>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -483,7 +492,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><div style="margin-top:6px; display:flex; align-items:center; gap:8px;"><small style="word-break:break-all;">Tx Hash: ${result.tx_hash}</small><button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)" style="padding:2px 8px; font-size:0.75rem; background:#334155; color:#f8fafc; border:none; border-radius:4px; cursor:pointer;">Copy</button></div>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
