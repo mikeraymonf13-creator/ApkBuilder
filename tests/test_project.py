@@ -287,5 +287,41 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.cmd_is_available", return_value=True)
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_packager_seen_dirs_deduplication(self, mock_getenv, mock_get_bin, mock_cmd_avail):
+        from core.packager import Task as PackagerTask
+
+        proj = Project(self.project_dir)
+
+        # Add a second library jar in the same directory (lib1)
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "classes2.jar"), "w") as f:
+            f.write("dummy jar 2")
+
+        find_files_calls = []
+        original_find_files = proj.find_files
+
+        def spy_find_files(base_dir, suffix):
+            if suffix == ".dex":
+                find_files_calls.append(base_dir)
+            return original_find_files(base_dir, suffix)
+
+        with patch.object(proj, "find_files", side_effect=spy_find_files):
+            packager_task = PackagerTask(proj)
+
+            os.makedirs(proj.bin_dir, exist_ok=True)
+            with open(os.path.join(proj.bin_dir, "gen.apk.res"), "w") as f:
+                f.write("res")
+            with patch("core.project.Project.find_dex_files", return_value=[os.path.join(proj.dex_dir, "classes.dex")]), \
+                 patch("shutil.copy2"), \
+                 patch("zipfile.ZipFile"), \
+                 patch.object(PackagerTask, "_Task__sign_apk"):
+                packager_task.start()
+
+            # Verify find_files for .dex on lib1_dir was only called once despite having 2 jars
+            self.assertEqual(find_files_calls.count(lib1_dir), 1)
+
 if __name__ == "__main__":
     unittest.main()
