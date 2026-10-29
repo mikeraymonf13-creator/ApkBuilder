@@ -227,6 +227,26 @@
     .tx-item:last-child {
       border-bottom: none;
     }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-copy:hover {
+      color: var(--text-main);
+      border-color: #38bdf8;
+    }
+    .btn-copy:focus-visible {
+      outline: 2px solid #38bdf8;
+      outline-offset: 1px;
+    }
   </style>
 </head>
 <body>
@@ -258,7 +278,7 @@
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="tonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -282,7 +302,7 @@
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <input type="number" id="jettonAmount" step="any" min="0" placeholder="0.00" required>
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
@@ -355,6 +375,21 @@
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
+    async function copyTxHash(text, btn) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.color = '#4ade80';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.color = '';
+        }, 1500);
+      } catch (err) {
+        console.error('Failed to copy hash:', err);
+      }
+    }
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -388,7 +423,10 @@
               <div class="tx-item">
                 <div>
                   <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${tx.hash || ''}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center;">
+                    <span>${tx.hash || ''}</span>
+                    ${tx.hash ? `<button type="button" class="btn-copy" aria-label="Copy transaction hash ${tx.hash}" onclick="copyTxHash('${tx.hash}', this)">Copy</button>` : ''}
+                  </div>
                 </div>
                 <div>${tx.amount || ''}</div>
               </div>
@@ -438,7 +476,8 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <code>${result.tx_hash}</code> <button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
+          form.reset();
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -483,7 +522,8 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <code>${result.tx_hash}</code> <button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
+          form.reset();
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
