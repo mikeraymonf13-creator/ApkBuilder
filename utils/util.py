@@ -1,4 +1,5 @@
 from utils.color_formatter import ColorFormatter
+from functools import lru_cache
 import os
 import subprocess
 import logging
@@ -26,6 +27,10 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Cache command availability checks using lru_cache.
+# During build execution, checking binary availability repeatedly executes
+# os.path.isfile/access or scans PATH via shutil.which. Caching eliminates redundant I/O.
+@lru_cache(maxsize=32)
 def cmd_is_available(cmd):
     if not cmd:
         return False
