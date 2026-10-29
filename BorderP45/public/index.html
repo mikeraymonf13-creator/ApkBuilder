@@ -235,7 +235,7 @@
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
       <div id="ton-connect"></div>
-      <div id="connectionStatus" class="offline-badge">Checking connection...</div>
+      <div id="connectionStatus" class="offline-badge" role="status" aria-live="polite">Checking connection...</div>
     </header>
 
     <div class="wallet-card">
@@ -254,7 +254,7 @@
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
           <label for="tonRecipient">Recipient Address</label>
-          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." autocomplete="off" spellcheck="false" required>
         </div>
         <div class="form-group">
           <label for="tonAmount">Amount (TON)</label>
@@ -274,11 +274,11 @@
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
           <label for="jettonMaster">Jetton Master / Wallet Address</label>
-          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required>
+          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." autocomplete="off" spellcheck="false" required>
         </div>
         <div class="form-group">
           <label for="jettonRecipient">Recipient Address</label>
-          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required>
+          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." autocomplete="off" spellcheck="false" required>
         </div>
         <div class="form-group">
           <label for="jettonAmount">Jetton Amount</label>
