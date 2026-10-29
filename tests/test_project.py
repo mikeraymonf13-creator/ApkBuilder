@@ -287,5 +287,68 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_packager_library_directory_deduplication(self, mock_getenv, mock_get_bin):
+        from core.packager import Task as PackagerTask
+        import zipfile
+
+        # Add a second jar in the same library directory lib1_dir
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        with open(os.path.join(lib1_dir, "second.jar"), "w") as f:
+            f.write("second jar")
+
+        proj = Project(self.project_dir)
+        jars = proj.find_lib_jars()
+        self.assertEqual(len(jars), 2)
+
+        # Create a dummy dex in lib1_dir and dummy gen.apk.res / dex in bin_dir for packager
+        with open(os.path.join(lib1_dir, "classes.dex"), "w") as f:
+            f.write("dummy lib dex")
+
+        os.makedirs(proj.bin_dir, exist_ok=True)
+        os.makedirs(proj.dex_dir, exist_ok=True)
+        with open(os.path.join(proj.dex_dir, "classes.dex"), "w") as f:
+            f.write("main dex")
+
+        # Create a valid empty zip for gen.apk.res
+        gen_apk_res = os.path.join(proj.bin_dir, "gen.apk.res")
+        with zipfile.ZipFile(gen_apk_res, "w") as zf:
+            zf.writestr("AndroidManifest.xml", "dummy manifest")
+
+        orig_find_files = proj.find_files
+        find_files_calls = []
+
+        def tracked_find_files(base_dir, suffix):
+            if suffix == ".dex" and base_dir == lib1_dir:
+                find_files_calls.append(base_dir)
+            return orig_find_files(base_dir, suffix)
+
+        proj.find_files = tracked_find_files
+
+        def mock_run(cmd):
+            # Simulate apksigner copying unsigned.apk to gen.apk
+            if "apksigner" in cmd[0] or "sign" in cmd:
+                shutil.copy2(os.path.join(proj.bin_dir, "unsigned.apk"), os.path.join(proj.bin_dir, "gen.apk"))
+
+        import shutil
+
+        # Test packager deduplication
+        with patch("core.packager.cmd_is_available", return_value=True), \
+             patch("core.packager.run", side_effect=mock_run):
+            packager_task = PackagerTask(proj)
+            packager_task.start()
+
+            # lib1_dir should only be scanned ONCE in packager start()
+            self.assertEqual(len(find_files_calls), 1)
+
+            # Check that gen.apk contains classes.dex and classes2.dex (and NOT duplicate classes3.dex)
+            gen_apk = os.path.join(proj.bin_dir, "gen.apk")
+            with zipfile.ZipFile(gen_apk, "r") as zf:
+                namelist = zf.namelist()
+                self.assertIn("classes.dex", namelist)
+                self.assertIn("classes2.dex", namelist)
+                self.assertNotIn("classes3.dex", namelist)
+
 if __name__ == "__main__":
     unittest.main()
