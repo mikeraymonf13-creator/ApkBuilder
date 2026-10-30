@@ -84,6 +84,48 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_lib_jars_res_pruning(self, mock_getenv, mock_get_bin):
+        # Create a new project instance to test fresh scan with res and assets dirs
+        proj = Project(self.project_dir)
+
+        # Create nested dirs: lib_nested/libs/inner.jar, and dummy files in res/assets
+        lib_nested = os.path.join(self.libs_dir, "lib_nested")
+        os.makedirs(os.path.join(lib_nested, "libs"), exist_ok=True)
+        os.makedirs(os.path.join(lib_nested, "res", "values"), exist_ok=True)
+        os.makedirs(os.path.join(lib_nested, "assets"), exist_ok=True)
+
+        inner_jar = os.path.join(lib_nested, "libs", "inner.jar")
+        with open(inner_jar, "w") as f:
+            f.write("inner jar")
+
+        res_jar = os.path.join(lib_nested, "res", "fake.jar")
+        with open(res_jar, "w") as f:
+            f.write("should be ignored")
+
+        lint_jar = os.path.join(lib_nested, "lint.jar")
+        with open(lint_jar, "w") as f:
+            f.write("lint jar")
+
+        res_manifest = os.path.join(lib_nested, "res", "AndroidManifest.xml")
+        with open(res_manifest, "w") as f:
+            f.write("""<manifest package="com.fake.res"></manifest>""")
+
+        nested_manifest = os.path.join(lib_nested, "AndroidManifest.xml")
+        with open(nested_manifest, "w") as f:
+            f.write("""<manifest package="com.example.nested"></manifest>""")
+
+        jars = proj.find_lib_jars()
+        # Should include classes.jar from setUp and inner.jar, but NOT lint.jar or res/fake.jar
+        self.assertIn(inner_jar, jars)
+        self.assertNotIn(res_jar, jars)
+        self.assertNotIn(lint_jar, jars)
+
+        pkgs = proj.get_lib_package_names()
+        self.assertIn("com.example.nested", pkgs)
+        self.assertNotIn("com.fake.res", pkgs)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_get_lib_package_names_caching(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 
