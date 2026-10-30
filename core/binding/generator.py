@@ -1,3 +1,4 @@
+from functools import lru_cache
 from core.binding.model import ViewNode
 from core.binding.parser import parse_layout
 from core.binding.resolver import bind_views
@@ -17,6 +18,10 @@ def layout_to_binding_class_name(filename):
     parts = name.split("_")
     return "".join(p.capitalize() for p in parts) + "Binding"
 
+# BOLT OPTIMIZATION: Memoize simple_tag extraction for XML tag names.
+# The same view tags (e.g., 'TextView', 'LinearLayout') are processed repeatedly
+# when generating class fields, constructor params, and bind methods.
+@lru_cache(maxsize=128)
 def simple_tag(tag):
     if not tag:
         return None

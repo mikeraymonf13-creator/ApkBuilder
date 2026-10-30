@@ -1,3 +1,4 @@
+from functools import lru_cache
 from utils.color_formatter import ColorFormatter
 import os
 import subprocess
@@ -26,6 +27,9 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Memoize cmd_is_available to avoid repeating PATH searches via
+# shutil.which and stat/access syscalls across multiple build tasks (Aapt2, Javac, Kotlinc, D8, Apksigner).
+@lru_cache(maxsize=64)
 def cmd_is_available(cmd):
     if not cmd:
         return False
