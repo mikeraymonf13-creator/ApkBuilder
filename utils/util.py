@@ -1,3 +1,4 @@
+from functools import lru_cache
 from utils.color_formatter import ColorFormatter
 import os
 import subprocess
@@ -26,6 +27,9 @@ def get_logger():
 def get_bin(cmd):
     return shutil.which(cmd)
 
+# BOLT OPTIMIZATION: Memoize cmd_is_available using lru_cache to avoid
+# repeated os.path.isfile/os.access syscalls and $PATH scans via shutil.which.
+@lru_cache(maxsize=128)
 def cmd_is_available(cmd):
     if not cmd:
         return False
