@@ -45,12 +45,14 @@ android:
         with open(os.path.join(self.project_dir, "test.keystore"), "w") as f:
             f.write("dummy keystore")
 
-        # Create libs directory with dummy jar and manifest
+        # Create libs directory with dummy jar, lint.jar, and manifest
         self.libs_dir = os.path.join(self.project_dir, ".libs")
         lib1_dir = os.path.join(self.libs_dir, "lib1")
         os.makedirs(lib1_dir, exist_ok=True)
         with open(os.path.join(lib1_dir, "classes.jar"), "w") as f:
             f.write("dummy jar")
+        with open(os.path.join(lib1_dir, "lint.jar"), "w") as f:
+            f.write("lint jar should be excluded")
         with open(os.path.join(lib1_dir, "AndroidManifest.xml"), "w") as f:
             f.write("""<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
@@ -65,10 +67,11 @@ android:
     def test_find_lib_jars_caching(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 
-        # First call populates cache
+        # First call populates cache and excludes lint.jar
         jars1 = proj.find_lib_jars()
         self.assertEqual(len(jars1), 1)
         self.assertTrue(jars1[0].endswith("classes.jar"))
+        self.assertFalse(any(j.endswith("lint.jar") for j in jars1))
         self.assertIsNotNone(proj._cached_lib_jars)
 
         # Add another jar to filesystem after first call
@@ -85,15 +88,24 @@ android:
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_get_lib_package_names_caching(self, mock_getenv, mock_get_bin):
+        # Add a nested library manifest
+        nested_lib = os.path.join(self.libs_dir, "group", "lib2")
+        os.makedirs(nested_lib, exist_ok=True)
+        with open(os.path.join(nested_lib, "AndroidManifest.xml"), "w") as f:
+            f.write("""<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.lib2">
+</manifest>""")
+
         proj = Project(self.project_dir)
 
         pkg_names1 = proj.get_lib_package_names()
-        self.assertEqual(pkg_names1, "com.example.lib1")
-        self.assertEqual(proj._cached_lib_package_names, "com.example.lib1")
+        self.assertEqual(pkg_names1, "com.example.lib1:com.example.lib2")
+        self.assertEqual(proj._cached_lib_package_names, "com.example.lib1:com.example.lib2")
 
         # Call again to verify cached return
         pkg_names2 = proj.get_lib_package_names()
-        self.assertEqual(pkg_names2, "com.example.lib1")
+        self.assertEqual(pkg_names2, "com.example.lib1:com.example.lib2")
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
