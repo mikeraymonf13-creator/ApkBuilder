@@ -233,6 +233,41 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_dex_files_in_dir(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Nonexistent dir returns empty list
+        nonexistent = os.path.join(self.project_dir, "nonexistent")
+        self.assertEqual(proj.find_dex_files_in_dir(nonexistent), [])
+
+        # Create library dir with dex and non-dex files
+        lib_dir = os.path.join(self.libs_dir, "lib_test_dex")
+        os.makedirs(lib_dir, exist_ok=True)
+        dex1 = os.path.join(lib_dir, "classes.dex")
+        dex2 = os.path.join(lib_dir, "classes2.dex")
+        jar = os.path.join(lib_dir, "classes.jar")
+        with open(dex1, "w") as f:
+            f.write("dex1")
+        with open(dex2, "w") as f:
+            f.write("dex2")
+        with open(jar, "w") as f:
+            f.write("jar")
+
+        # Nested dir with dex should NOT be picked up by single-level scan
+        sub_dir = os.path.join(lib_dir, "sub")
+        os.makedirs(sub_dir, exist_ok=True)
+        with open(os.path.join(sub_dir, "nested.dex"), "w") as f:
+            f.write("nested")
+
+        dex_files = proj.find_dex_files_in_dir(lib_dir)
+        self.assertEqual(len(dex_files), 2)
+        self.assertIn(dex1, dex_files)
+        self.assertIn(dex2, dex_files)
+        self.assertNotIn(jar, dex_files)
+        self.assertNotIn(os.path.join(sub_dir, "nested.dex"), dex_files)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_find_native_libs(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 

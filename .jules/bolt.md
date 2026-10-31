@@ -7,3 +7,7 @@
 ## 2026-10-05 - Avoid redundant stat syscalls during directory scans
 **Learning:** `os.listdir()` returns string filenames, requiring explicit `os.path.isdir()`/`os.path.isfile()` stat syscalls for each entry. Replacing `os.listdir()` with `os.scandir()` leverages OS directory entry metadata (`d_type`), avoiding stat calls and string concatenations during file scans in build tasks.
 **Action:** Use `os.scandir()` when scanning directories for files with specific extensions or filtering subdirectories.
+
+## 2026-10-31 - Recursive find_files on flat library directories
+**Learning:** In Dexer and Packager tasks, scanning each library folder using recursive `find_files()` causes redundant recursive directory walking and unnecessary stat calls across nested subdirectories (such as `res/` or `META-INF/`). Library DEX files (`classes.dex`) always reside directly in the root of the library folder.
+**Action:** Use a single-level `os.scandir()` lookup (`find_dex_files_in_dir()`) instead of recursive tree traversals when looking up library-level DEX artifacts.
