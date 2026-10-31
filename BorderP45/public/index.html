@@ -216,6 +216,11 @@
       color: #4ade80;
     }
 
+    .required-mark {
+      color: var(--error-color);
+      margin-left: 2px;
+    }
+
     .tx-item {
       padding: 10px 0;
       border-bottom: 1px solid var(--border-color);
@@ -235,7 +240,7 @@
       <h1>BorderP45 Portal</h1>
       <p>TON & Jetton Transfers</p>
       <div id="ton-connect"></div>
-      <div id="connectionStatus" class="offline-badge">Checking connection...</div>
+      <div id="connectionStatus" class="offline-badge" role="status" aria-live="polite">Checking connection...</div>
     </header>
 
     <div class="wallet-card">
@@ -253,12 +258,12 @@
     <div id="tonTab" class="tab-content active" role="tabpanel" aria-labelledby="tab-ton">
       <form id="tonForm" onsubmit="handleTonTransfer(event)">
         <div class="form-group">
-          <label for="tonRecipient">Recipient Address</label>
-          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required>
+          <label for="tonRecipient">Recipient Address <span class="required-mark" aria-hidden="true">*</span></label>
+          <input type="text" id="tonRecipient" placeholder="e.g. EQD..." required aria-required="true" autocomplete="off" spellcheck="false">
         </div>
         <div class="form-group">
-          <label for="tonAmount">Amount (TON)</label>
-          <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
+          <label for="tonAmount">Amount (TON) <span class="required-mark" aria-hidden="true">*</span></label>
+          <input type="number" id="tonAmount" step="any" min="0" inputmode="decimal" placeholder="0.00" required aria-required="true">
         </div>
         <div class="form-group">
           <label for="tonComment">Comment / Payload (Optional)</label>
@@ -273,16 +278,16 @@
     <div id="jettonTab" class="tab-content" role="tabpanel" aria-labelledby="tab-jetton">
       <form id="jettonForm" onsubmit="handleJettonTransfer(event)">
         <div class="form-group">
-          <label for="jettonMaster">Jetton Master / Wallet Address</label>
-          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required>
+          <label for="jettonMaster">Jetton Master / Wallet Address <span class="required-mark" aria-hidden="true">*</span></label>
+          <input type="text" id="jettonMaster" placeholder="e.g. EQB..." required aria-required="true" autocomplete="off" spellcheck="false">
         </div>
         <div class="form-group">
-          <label for="jettonRecipient">Recipient Address</label>
-          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required>
+          <label for="jettonRecipient">Recipient Address <span class="required-mark" aria-hidden="true">*</span></label>
+          <input type="text" id="jettonRecipient" placeholder="e.g. EQD..." required aria-required="true" autocomplete="off" spellcheck="false">
         </div>
         <div class="form-group">
-          <label for="jettonAmount">Jetton Amount</label>
-          <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
+          <label for="jettonAmount">Jetton Amount <span class="required-mark" aria-hidden="true">*</span></label>
+          <input type="number" id="jettonAmount" step="any" min="0" inputmode="decimal" placeholder="0.00" required aria-required="true">
         </div>
         <div class="form-group">
           <label for="jettonComment">Comment / Payload (Optional)</label>
