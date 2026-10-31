@@ -287,5 +287,20 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_snake_to_camel_caching_and_edge_cases(self):
+        from core.binding.resolver import snake_to_camel
+
+        snake_to_camel.cache_clear()
+        self.assertEqual(snake_to_camel("hello_world"), "helloWorld")
+        hits_before = snake_to_camel.cache_info().hits
+        self.assertEqual(snake_to_camel("hello_world"), "helloWorld")
+        self.assertEqual(snake_to_camel.cache_info().hits, hits_before + 1)
+
+        # Test edge cases
+        self.assertEqual(snake_to_camel("plainword"), "plainword")
+        self.assertEqual(snake_to_camel("_leading_underscore"), "LeadingUnderscore")
+        self.assertEqual(snake_to_camel("multiple_part_identifier_name"), "multiplePartIdentifierName")
+        self.assertEqual(snake_to_camel("___"), "")
+
 if __name__ == "__main__":
     unittest.main()

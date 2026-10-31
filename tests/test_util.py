@@ -15,6 +15,13 @@ class TestUtil(unittest.TestCase):
         self.assertTrue(cmd_is_available(python_executable))
         self.assertFalse(cmd_is_available("/tmp/non_existent_binary_path_xyz"))
 
+    def test_cmd_is_available_caching(self):
+        cmd_is_available.cache_clear()
+        self.assertTrue(cmd_is_available("python3"))
+        hits_before = cmd_is_available.cache_info().hits
+        self.assertTrue(cmd_is_available("python3"))
+        self.assertEqual(cmd_is_available.cache_info().hits, hits_before + 1)
+
     def test_get_bin(self):
         path = get_bin("python3")
         self.assertIsNotNone(path)
