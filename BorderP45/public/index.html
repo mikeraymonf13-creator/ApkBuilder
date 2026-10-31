@@ -126,12 +126,28 @@
       margin-bottom: 18px;
     }
 
+    .form-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .char-counter {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
     label {
       display: block;
       margin-bottom: 8px;
       font-size: 0.9rem;
       color: var(--text-muted);
       font-weight: 500;
+    }
+
+    .form-group-header label {
+      margin-bottom: 0;
     }
 
     input, textarea {
@@ -261,8 +277,11 @@
           <input type="number" id="tonAmount" step="any" placeholder="0.00" required>
         </div>
         <div class="form-group">
-          <label for="tonComment">Comment / Payload (Optional)</label>
-          <input type="text" id="tonComment" placeholder="Transfer memo">
+          <div class="form-group-header">
+            <label for="tonComment">Comment / Payload (Optional)</label>
+            <span id="tonCommentCounter" class="char-counter" aria-live="polite">0 / 120</span>
+          </div>
+          <input type="text" id="tonComment" placeholder="Transfer memo" maxlength="120" aria-describedby="tonCommentCounter">
         </div>
         <button type="submit" class="btn-submit">Send TON</button>
       </form>
@@ -285,8 +304,11 @@
           <input type="number" id="jettonAmount" step="any" placeholder="0.00" required>
         </div>
         <div class="form-group">
-          <label for="jettonComment">Comment / Payload (Optional)</label>
-          <input type="text" id="jettonComment" placeholder="Transfer memo">
+          <div class="form-group-header">
+            <label for="jettonComment">Comment / Payload (Optional)</label>
+            <span id="jettonCommentCounter" class="char-counter" aria-live="polite">0 / 120</span>
+          </div>
+          <input type="text" id="jettonComment" placeholder="Transfer memo" maxlength="120" aria-describedby="jettonCommentCounter">
         </div>
         <button type="submit" class="btn-submit">Send Jetton</button>
       </form>
@@ -354,6 +376,18 @@
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
+
+    function setupCharCounter(inputId, counterId, maxLen) {
+      const input = document.getElementById(inputId);
+      const counter = document.getElementById(counterId);
+      if (input && counter) {
+        input.addEventListener('input', () => {
+          counter.textContent = `${input.value.length} / ${maxLen}`;
+        });
+      }
+    }
+    setupCharCounter('tonComment', 'tonCommentCounter', 120);
+    setupCharCounter('jettonComment', 'jettonCommentCounter', 120);
 
     // Register Service Worker
     if ('serviceWorker' in navigator) {
