@@ -11,3 +11,7 @@
 ## 2026-10-30 - Prune resource directories during library code traversals
 **Learning:** In Android project dependencies (`.libs`), extracted AARs contain expansive `res/` and `assets/` subtrees with hundreds of localized directories. Searching for code assets (`.jar`) or manifests with unrestricted `os.walk` spends >80% of traversal time scanning non-code resource trees where JARs or manifests never exist.
 **Action:** In dependency scanners, prune traversal branches matching `res` or `assets` when scanning for compiled code or manifest metadata.
+
+## 2026-11-01 - Avoid unrestricted recursive file search for library dex discovery
+**Learning:** `Project.find_files(library_dir, ".dex")` performs an unpruned recursive tree traversal and stat checks per library across both Dexer and Packager tasks. Extracted AAR library directories contain extensive `res/` and `assets/` trees where DEX files are never located, creating unnecessary filesystem traversal overhead across dozens of dependency libraries.
+**Action:** Use a dedicated `find_lib_dex_files(library_dir)` scan that prunes `res` and `assets` trees and avoids stat overhead when discovering library DEX files in Dexer and Packager tasks.
