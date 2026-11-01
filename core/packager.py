@@ -50,7 +50,9 @@ class Task:
             dex_index = len(dex_files) + 1
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
-                library_dex_files = self.project.find_files(library_dir, ".dex")
+                # BOLT OPTIMIZATION: Prune 'res' subtree during library dex search
+                # to avoid scanning hundreds of resource directories for compiled code.
+                library_dex_files = self.project.find_files(library_dir, ".dex", exclude_dirs=("res",))
                 if not library_dex_files:
                     continue
                 
