@@ -201,6 +201,26 @@
       color: #f87171;
     }
 
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 6px;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      background: rgba(0, 136, 204, 0.2);
+      color: #38bdf8;
+      border: 1px solid var(--accent-color);
+      border-radius: 4px;
+      cursor: pointer;
+      vertical-align: middle;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      background: var(--accent-color);
+      color: #ffffff;
+    }
+
     .offline-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -355,6 +375,18 @@
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
+    function copyToClipboard(text, btn) {
+      navigator.clipboard.writeText(text).then(() => {
+        const prev = btn.textContent;
+        btn.textContent = '✓ Copied!';
+        btn.setAttribute('aria-label', 'Transaction hash copied');
+        setTimeout(() => {
+          btn.textContent = prev;
+          btn.setAttribute('aria-label', 'Copy transaction hash to clipboard');
+        }, 2000);
+      }).catch(err => console.error('Failed to copy text:', err));
+    }
+
     // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
@@ -438,7 +470,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <span id="tonTxHash">${result.tx_hash}</span> <button type="button" class="copy-btn" aria-label="Copy transaction hash to clipboard" onclick="copyToClipboard('${result.tx_hash}', this)">📋 Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -483,7 +515,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <span id="jettonTxHash">${result.tx_hash}</span> <button type="button" class="copy-btn" aria-label="Copy transaction hash to clipboard" onclick="copyToClipboard('${result.tx_hash}', this)">📋 Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
