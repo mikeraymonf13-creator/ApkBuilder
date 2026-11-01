@@ -172,6 +172,46 @@ android:
         self.assertEqual(len(kt_files), 1)
         self.assertEqual(kt_files[0], file_kt)
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_files_exclude_dirs(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Create dummy directory structure with code and resource subtrees
+        test_base = os.path.join(self.project_dir, "test_exclude")
+        res_dir = os.path.join(test_base, "res", "layout")
+        assets_dir = os.path.join(test_base, "assets")
+        code_dir = os.path.join(test_base, "code")
+        os.makedirs(res_dir, exist_ok=True)
+        os.makedirs(assets_dir, exist_ok=True)
+        os.makedirs(code_dir, exist_ok=True)
+
+        res_dex = os.path.join(res_dir, "dummy.dex")
+        assets_dex = os.path.join(assets_dir, "dummy.dex")
+        code_dex = os.path.join(code_dir, "classes.dex")
+
+        for path in (res_dex, assets_dex, code_dex):
+            with open(path, "w") as f:
+                f.write("dex")
+
+        # Default find_files does not exclude any directory (backward compatible)
+        all_found = proj.find_files(test_base, ".dex")
+        self.assertEqual(len(all_found), 3)
+        self.assertIn(res_dex, all_found)
+        self.assertIn(assets_dex, all_found)
+        self.assertIn(code_dex, all_found)
+
+        # Explicit exclude_dirs=('res',) excludes 'res'
+        pruned_res = proj.find_files(test_base, ".dex", exclude_dirs=("res",))
+        self.assertEqual(len(pruned_res), 2)
+        self.assertNotIn(res_dex, pruned_res)
+        self.assertIn(assets_dex, pruned_res)
+        self.assertIn(code_dex, pruned_res)
+
+        # Explicit exclude_dirs=('res', 'assets') excludes both
+        pruned_both = proj.find_files(test_base, ".dex", exclude_dirs=("res", "assets"))
+        self.assertEqual(pruned_both, [code_dex])
+
     @patch("utils.util.get_bin", return_value=None)
     @patch("os.getenv", return_value=None)
     def test_sdk_and_bin_fallback(self, mock_getenv, mock_get_bin):
