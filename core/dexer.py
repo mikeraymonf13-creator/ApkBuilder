@@ -18,7 +18,8 @@ class Task:
         
         for library in self.project.find_lib_jars():
             library_dir = os.path.dirname(library)
-            dex_files = self.project.find_files(library_dir, ".dex")
+            # BOLT OPTIMIZATION: Prune resource subtrees when searching for .dex files in library dirs
+            dex_files = self.project.find_files(library_dir, ".dex", exclude_dirs=("res", "assets"))
             if not dex_files:
                 self.__dex_library(library)
     
