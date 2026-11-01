@@ -275,6 +275,44 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_lib_dex_files(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        # Non-existent directory returns empty list
+        self.assertEqual(proj.find_lib_dex_files(os.path.join(self.project_dir, "nonexistent")), [])
+
+        # Create library structure with root dex, nested libs/ dex, and dummy dex in res/assets
+        test_lib_dir = os.path.join(self.libs_dir, "test_lib_complex")
+        nested_libs_dir = os.path.join(test_lib_dir, "libs")
+        res_dir = os.path.join(test_lib_dir, "res", "raw")
+        assets_dir = os.path.join(test_lib_dir, "assets")
+
+        os.makedirs(nested_libs_dir, exist_ok=True)
+        os.makedirs(res_dir, exist_ok=True)
+        os.makedirs(assets_dir, exist_ok=True)
+
+        root_dex = os.path.join(test_lib_dir, "classes.dex")
+        nested_dex = os.path.join(nested_libs_dir, "classes.dex")
+        res_dex = os.path.join(res_dir, "ignored.dex")
+        assets_dex = os.path.join(assets_dir, "ignored.dex")
+        non_dex_file = os.path.join(test_lib_dir, "classes.jar")
+
+        for fpath in (root_dex, nested_dex, res_dex, assets_dex, non_dex_file):
+            with open(fpath, "w") as f:
+                f.write("content")
+
+        dex_files = proj.find_lib_dex_files(test_lib_dir)
+
+        # Should contain root_dex and nested_dex, but ignore res, assets, and non-dex files
+        self.assertEqual(len(dex_files), 2)
+        self.assertIn(root_dex, dex_files)
+        self.assertIn(nested_dex, dex_files)
+        self.assertNotIn(res_dex, dex_files)
+        self.assertNotIn(assets_dex, dex_files)
+        self.assertNotIn(non_dex_file, dex_files)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_find_native_libs(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 
