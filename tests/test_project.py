@@ -172,6 +172,36 @@ android:
         self.assertEqual(len(kt_files), 1)
         self.assertEqual(kt_files[0], file_kt)
 
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_files_prune(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        base_dir = os.path.join(self.project_dir, "test_prune")
+        keep_dir = os.path.join(base_dir, "code")
+        prune_dir = os.path.join(base_dir, "res")
+        os.makedirs(keep_dir, exist_ok=True)
+        os.makedirs(prune_dir, exist_ok=True)
+
+        dex_keep = os.path.join(keep_dir, "classes.dex")
+        dex_prune = os.path.join(prune_dir, "ignored.dex")
+
+        with open(dex_keep, "w") as f:
+            f.write("keep")
+        with open(dex_prune, "w") as f:
+            f.write("prune")
+
+        # Without prune, both files are returned
+        all_dex = proj.find_files(base_dir, ".dex")
+        self.assertEqual(len(all_dex), 2)
+        self.assertIn(dex_keep, all_dex)
+        self.assertIn(dex_prune, all_dex)
+
+        # With prune=("res",), only the non-pruned file is returned
+        pruned_dex = proj.find_files(base_dir, ".dex", prune=("res",))
+        self.assertEqual(len(pruned_dex), 1)
+        self.assertEqual(pruned_dex[0], dex_keep)
+
     @patch("utils.util.get_bin", return_value=None)
     @patch("os.getenv", return_value=None)
     def test_sdk_and_bin_fallback(self, mock_getenv, mock_get_bin):
