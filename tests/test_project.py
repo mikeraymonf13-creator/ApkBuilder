@@ -329,5 +329,38 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_snake_to_camel_conversion_and_caching(self):
+        from core.binding.resolver import snake_to_camel
+
+        # Test common identifier conversions
+        self.assertEqual(snake_to_camel("simple"), "simple")
+        self.assertEqual(snake_to_camel("title_text"), "titleText")
+        self.assertEqual(snake_to_camel("btn_action_confirm"), "btnActionConfirm")
+        self.assertEqual(snake_to_camel("_leading_underscore"), "LeadingUnderscore")
+        self.assertEqual(snake_to_camel("trailing_underscore_"), "trailingUnderscore")
+        self.assertEqual(snake_to_camel("__double__underscores__"), "DoubleUnderscores")
+        self.assertEqual(snake_to_camel(""), "")
+        self.assertEqual(snake_to_camel("_"), "")
+        self.assertEqual(snake_to_camel("___"), "")
+
+        # Verify caching behavior
+        snake_to_camel.cache_clear()
+        info_initial = snake_to_camel.cache_info()
+        self.assertEqual(info_initial.hits, 0)
+        self.assertEqual(info_initial.misses, 0)
+
+        # First call: cache miss
+        val1 = snake_to_camel("reused_view_id")
+        self.assertEqual(val1, "reusedViewId")
+        info_miss = snake_to_camel.cache_info()
+        self.assertEqual(info_miss.misses, 1)
+        self.assertEqual(info_miss.hits, 0)
+
+        # Second call with same identifier: cache hit
+        val2 = snake_to_camel("reused_view_id")
+        self.assertEqual(val2, "reusedViewId")
+        info_hit = snake_to_camel.cache_info()
+        self.assertEqual(info_hit.hits, 1)
+
 if __name__ == "__main__":
     unittest.main()
