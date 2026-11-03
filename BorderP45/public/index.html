@@ -194,6 +194,22 @@
       color: #4ade80;
     }
 
+    .btn-copy {
+      background: #334155;
+      color: var(--text-main);
+      border: none;
+      padding: 2px 8px;
+      font-size: 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-left: 6px;
+      vertical-align: middle;
+      transition: background-color 0.2s;
+    }
+    .btn-copy:hover {
+      background: #475569;
+    }
+
     .status-card.error {
       display: block;
       background-color: rgba(239, 68, 68, 0.15);
@@ -351,6 +367,20 @@
       }
     }
 
+    function copyTxHash(hash, btn) {
+      navigator.clipboard.writeText(hash).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.setAttribute('aria-label', 'Transaction hash copied');
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.setAttribute('aria-label', 'Copy transaction hash');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy tx hash:', err);
+      });
+    }
+
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
@@ -438,7 +468,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <span>${result.tx_hash}</span><button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -483,7 +513,7 @@
         if (response.ok && result.success) {
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: <span>${result.tx_hash}</span><button type="button" class="btn-copy" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy</button></small>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
