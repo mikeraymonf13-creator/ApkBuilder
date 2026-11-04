@@ -20,5 +20,21 @@ class TestUtil(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertTrue(path.endswith("python3"))
 
+    def test_cmd_is_available_caching(self):
+        cmd_is_available.cache_clear()
+        initial_info = cmd_is_available.cache_info()
+        self.assertEqual(initial_info.hits, 0)
+
+        # First call: cache miss
+        self.assertTrue(cmd_is_available("python3"))
+        info_after_first = cmd_is_available.cache_info()
+        self.assertEqual(info_after_first.misses, 1)
+        self.assertEqual(info_after_first.hits, 0)
+
+        # Second call: cache hit
+        self.assertTrue(cmd_is_available("python3"))
+        info_after_second = cmd_is_available.cache_info()
+        self.assertEqual(info_after_second.hits, 1)
+
 if __name__ == "__main__":
     unittest.main()
