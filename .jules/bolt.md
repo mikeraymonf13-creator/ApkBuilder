@@ -11,3 +11,7 @@
 ## 2026-10-30 - Prune resource directories during library code traversals
 **Learning:** In Android project dependencies (`.libs`), extracted AARs contain expansive `res/` and `assets/` subtrees with hundreds of localized directories. Searching for code assets (`.jar`) or manifests with unrestricted `os.walk` spends >80% of traversal time scanning non-code resource trees where JARs or manifests never exist.
 **Action:** In dependency scanners, prune traversal branches matching `res` or `assets` when scanning for compiled code or manifest metadata.
+
+## 2026-11-05 - Avoid redundant PATH lookups and exec checks for CLI binaries
+**Learning:** Each build phase queries `cmd_is_available()` and `get_bin()` to verify executables (`javac`, `d8`, `aapt2`, `apksigner`, `kotlinc`, `java`). Calling `shutil.which()` repeatedly loops through PATH directories and executes `stat`/`access` syscalls for each directory in PATH, even though the system environment does not change during build execution.
+**Action:** Decorate `get_bin` and `cmd_is_available` with `@functools.lru_cache(maxsize=64)` to make repetitive CLI binary resolution instantaneous.
