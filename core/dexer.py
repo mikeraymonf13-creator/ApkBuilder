@@ -18,9 +18,11 @@ class Task:
         
         for library in self.project.find_lib_jars():
             library_dir = os.path.dirname(library)
-            dex_files = self.project.find_files(library_dir, ".dex")
+            dex_files = self.project.find_lib_dex_files(library_dir)
             if not dex_files:
                 self.__dex_library(library)
+                # Refresh cache after generating dex
+                self.project.find_lib_dex_files(library_dir, refresh=True)
     
     def start(self):
         get_logger().info("-- Dexing with D8")
