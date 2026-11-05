@@ -264,6 +264,31 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_lib_dex_files_caching_and_refresh(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+
+        # Initially lib1 has no .dex file
+        dex_files1 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(dex_files1, [])
+        self.assertIn(lib1_dir, proj._cached_lib_dex)
+
+        # Create classes.dex in lib1
+        lib1_dex = os.path.join(lib1_dir, "classes.dex")
+        with open(lib1_dex, "w") as f:
+            f.write("dex")
+
+        # Calling without refresh returns cached empty list
+        dex_files_cached = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(dex_files_cached, [])
+
+        # Calling with refresh=True invalidates cache and returns newly discovered dex
+        dex_files_refreshed = proj.find_lib_dex_files(lib1_dir, refresh=True)
+        self.assertEqual(dex_files_refreshed, [lib1_dex])
+        self.assertEqual(proj._cached_lib_dex[lib1_dir], [lib1_dex])
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_dexer_classpath_caching(self, mock_getenv, mock_get_bin):
         from core.dexer import Task as DexerTask
         proj = Project(self.project_dir)
