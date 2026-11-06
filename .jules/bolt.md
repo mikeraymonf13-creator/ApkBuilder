@@ -11,3 +11,7 @@
 ## 2026-10-30 - Prune resource directories during library code traversals
 **Learning:** In Android project dependencies (`.libs`), extracted AARs contain expansive `res/` and `assets/` subtrees with hundreds of localized directories. Searching for code assets (`.jar`) or manifests with unrestricted `os.walk` spends >80% of traversal time scanning non-code resource trees where JARs or manifests never exist.
 **Action:** In dependency scanners, prune traversal branches matching `res` or `assets` when scanning for compiled code or manifest metadata.
+
+## 2026-11-06 - Uncompressed DEX storage in APK packaging
+**Learning:** Writing `.dex` files into APK archives with default `ZIP_DEFLATED` invokes heavy zlib Deflate compression across megabytes of bytecode, accounting for >90% of packaging time while offering minimal compression ratio. Android runtime also expects DEX entries to be uncompressed (page-aligned) so they can be memory-mapped directly from the APK at runtime without decompression.
+**Action:** Always store `.dex` files uncompressed (`compress_type=zipfile.ZIP_STORED`) in APK packaging tasks.
