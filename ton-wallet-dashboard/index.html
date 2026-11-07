@@ -20,14 +20,17 @@
   <main class="wrap">
     <div class="top"><h1>TON Wallet</h1><div id="ton-connect"></div></div>
     <section class="card">
-      <div class="muted">Connected wallet</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span class="muted">Connected wallet</span>
+        <button id="copy-btn" type="button" aria-label="Copy wallet address" style="display:none;background:transparent;border:1px solid #292b31;color:#aeb1b8;font-size:12px;padding:3px 8px;cursor:pointer;" onclick="copyWalletAddress()">Copy</button>
+      </div>
       <div id="address" class="address" style="margin-top:8px">Not connected</div>
       <div class="muted" style="margin-top:24px">Balance</div>
       <div id="balance" class="balance">— TON</div>
     </section>
     <section class="card">
       <h2 style="margin-top:0">Recent activity</h2>
-      <div id="activity" class="muted">Connect your wallet to begin.</div>
+      <div id="activity" class="muted" aria-live="polite">Connect your wallet to begin.</div>
     </section>
   </main>
   <script>
@@ -36,7 +39,21 @@
       buttonRootId: 'ton-connect'
     });
 
+    let currentAddress = '';
     function short(a){ return a ? a.slice(0,8)+'…'+a.slice(-8) : ''; }
+
+    function copyWalletAddress() {
+      if (!currentAddress) return;
+      navigator.clipboard.writeText(currentAddress).then(() => {
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '✓ Copied';
+        btn.setAttribute('aria-label', 'Wallet address copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.setAttribute('aria-label', 'Copy wallet address');
+        }, 2000);
+      });
+    }
 
     async function loadTonData(address) {
       try {
@@ -79,7 +96,10 @@
 
     ui.onStatusChange(wallet => {
       const address = wallet?.account?.address || '';
+      currentAddress = address;
       document.getElementById('address').textContent = address ? short(address) : 'Not connected';
+      const copyBtn = document.getElementById('copy-btn');
+      copyBtn.style.display = address ? 'inline-block' : 'none';
       if (wallet && address) {
         document.getElementById('activity').textContent = 'Loading activity...';
         loadTonData(address);
