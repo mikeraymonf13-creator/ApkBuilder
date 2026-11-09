@@ -74,10 +74,11 @@ class Project:
 
         self.view_binding_dir = os.path.join(self.output_dir, "view_binding")
         
-        # Cache for library jars, package names, and build-tools versions
+        # Cache for library jars, package names, build-tools versions, and lib dex files
         self._cached_lib_jars = None
         self._cached_lib_package_names = None
         self._build_tools_versions = None
+        self._cached_lib_dex_files = {}
 
         self.sdk_dir = self.__resolve_sdk_path()
 
@@ -254,6 +255,16 @@ class Project:
                 ]
         except OSError:
             return []
+
+    def find_lib_dex_files(self, library_dir):
+        # BOLT OPTIMIZATION: Cache library DEX file paths per library directory to avoid
+        # running duplicate directory tree scans across dexer and packager phases.
+        if library_dir not in self._cached_lib_dex_files:
+            self._cached_lib_dex_files[library_dir] = self.find_files(library_dir, ".dex")
+        return list(self._cached_lib_dex_files[library_dir])
+
+    def invalidate_lib_dex_cache(self, library_dir):
+        self._cached_lib_dex_files.pop(library_dir, None)
     
     def find_native_libs(self):
         # BOLT OPTIMIZATION: Use os.scandir instead of os.listdir + os.path.isdir/join

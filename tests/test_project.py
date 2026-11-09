@@ -264,6 +264,39 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_lib_dex_files_caching_and_invalidation(self, mock_getenv, mock_get_bin):
+        from core.dexer import Task as DexerTask
+        proj = Project(self.project_dir)
+
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        # Initially lib1 has no dex file
+        dex1 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(dex1, [])
+        self.assertIn(lib1_dir, proj._cached_lib_dex_files)
+
+        # Create dex file in lib1
+        dex_path = os.path.join(lib1_dir, "classes.dex")
+        with open(dex_path, "w") as f:
+            f.write("dex content")
+
+        # Because it's cached, subsequent lookup returns cached empty list
+        dex2 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(dex2, [])
+
+        # Simulate dexer invalidating the cache when dexing library
+        dexer_task = DexerTask(proj)
+        with patch("core.dexer.run"):
+            dexer_task._Task__dex_library(os.path.join(lib1_dir, "classes.jar"))
+
+        self.assertNotIn(lib1_dir, proj._cached_lib_dex_files)
+
+        # Now lookup finds the newly created dex file and caches it
+        dex3 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(dex3, [dex_path])
+        self.assertEqual(proj._cached_lib_dex_files[lib1_dir], [dex_path])
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_dexer_classpath_caching(self, mock_getenv, mock_get_bin):
         from core.dexer import Task as DexerTask
         proj = Project(self.project_dir)
