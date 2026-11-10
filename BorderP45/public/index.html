@@ -227,6 +227,21 @@
     .tx-item:last-child {
       border-bottom: none;
     }
+    .copy-hash-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      border-radius: 4px;
+      padding: 1px 6px;
+      cursor: pointer;
+      margin-left: 6px;
+      transition: all 0.15s ease;
+    }
+    .copy-hash-btn:hover {
+      color: var(--text-main);
+      border-color: var(--accent-color);
+    }
   </style>
 </head>
 <body>
@@ -393,7 +408,10 @@
               <div class="tx-item">
                 <div>
                   <strong>${tx.type || 'Transaction'}</strong>
-                  <div style="font-size:0.75rem; color:var(--text-muted);">${tx.hash || ''}</div>
+                  <div style="font-size:0.75rem; color:var(--text-muted); display:flex; align-items:center; margin-top:2px;">
+                    <span>${tx.hash || ''}</span>
+                    ${tx.hash ? `<button type="button" class="copy-hash-btn" aria-label="Copy transaction hash" title="Copy transaction hash" onclick="copyTxHash('${tx.hash}', this)">Copy</button>` : ''}
+                  </div>
                 </div>
                 <div>${tx.amount || ''}</div>
               </div>
@@ -418,6 +436,20 @@
           btn.textContent = 'Copy';
           btn.setAttribute('aria-label', 'Copy wallet address');
         }, 2000);
+      });
+    }
+
+    function copyTxHash(hash, btn) {
+      if (!hash || !btn) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        btn.textContent = '✓';
+        btn.setAttribute('aria-label', 'Transaction hash copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.setAttribute('aria-label', 'Copy transaction hash');
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy transaction hash:', err);
       });
     }
 
