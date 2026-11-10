@@ -48,9 +48,11 @@ class Task:
                 apk.write(dex, name)
             
             dex_index = len(dex_files) + 1
+            # BOLT OPTIMIZATION: Use find_lib_dex_files to retrieve cached DEX file lists
+            # previously discovered during the dexer task, avoiding 60+ recursive filesystem scans.
             for library in self.project.find_lib_jars():
                 library_dir = os.path.dirname(library)
-                library_dex_files = self.project.find_files(library_dir, ".dex")
+                library_dex_files = self.project.find_lib_dex_files(library_dir)
                 if not library_dex_files:
                     continue
                 

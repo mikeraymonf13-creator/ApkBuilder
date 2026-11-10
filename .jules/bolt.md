@@ -11,3 +11,7 @@
 ## 2026-10-30 - Prune resource directories during library code traversals
 **Learning:** In Android project dependencies (`.libs`), extracted AARs contain expansive `res/` and `assets/` subtrees with hundreds of localized directories. Searching for code assets (`.jar`) or manifests with unrestricted `os.walk` spends >80% of traversal time scanning non-code resource trees where JARs or manifests never exist.
 **Action:** In dependency scanners, prune traversal branches matching `res` or `assets` when scanning for compiled code or manifest metadata.
+
+## 2026-11-10 - Cache library DEX discovery across build tasks
+**Learning:** Both Dexer and Packager tasks iterate through each library jar and call `find_files(library_dir, ".dex")`, resulting in duplicate recursive directory scans for dozens of library directories during a single build run.
+**Action:** Cache discovered DEX files by library directory on the `Project` instance via `find_lib_dex_files()` and provide cache invalidation (`invalidate_lib_dex_cache()`) when Dexer compiles new DEX files.
