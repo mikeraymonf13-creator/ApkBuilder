@@ -24,6 +24,9 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'id="walletAddress"', res.data)
         self.assertIn(b'id="copyAddressBtn"', res.data)
         self.assertIn(b'aria-label="Copy wallet address"', res.data)
+        self.assertIn(b'copy-hash-btn', res.data)
+        self.assertIn(b'aria-label="Copy transaction hash"', res.data)
+        self.assertIn(b'copyTxHash', res.data)
 
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')
