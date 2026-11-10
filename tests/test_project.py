@@ -362,5 +362,27 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_snake_to_camel_caching_and_correctness(self):
+        from core.binding.resolver import snake_to_camel
+
+        snake_to_camel.cache_clear()
+
+        # Test conversion correctness
+        self.assertEqual(snake_to_camel("title_text"), "titleText")
+        self.assertEqual(snake_to_camel("action_button_submit"), "actionButtonSubmit")
+        self.assertEqual(snake_to_camel("alreadycamel"), "alreadycamel")
+        self.assertEqual(snake_to_camel("_header_view"), "HeaderView")
+        self.assertEqual(snake_to_camel(""), "")
+
+        # Verify caching metrics
+        info = snake_to_camel.cache_info()
+        self.assertGreaterEqual(info.misses, 1)
+
+        # Repeated calls hit the cache
+        self.assertEqual(snake_to_camel("title_text"), "titleText")
+        self.assertEqual(snake_to_camel("action_button_submit"), "actionButtonSubmit")
+        info_after = snake_to_camel.cache_info()
+        self.assertEqual(info_after.hits, 2)
+
 if __name__ == "__main__":
     unittest.main()
