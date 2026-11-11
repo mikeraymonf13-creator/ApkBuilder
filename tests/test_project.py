@@ -326,6 +326,45 @@ android:
 
     @patch("utils.util.get_bin", return_value="/usr/bin/stub")
     @patch("os.getenv", return_value="/tmp/android-sdk")
+    def test_find_lib_dex_files_caching(self, mock_getenv, mock_get_bin):
+        proj = Project(self.project_dir)
+
+        lib1_dir = os.path.join(self.libs_dir, "lib1")
+        dex1 = os.path.join(lib1_dir, "classes.dex")
+        with open(dex1, "w") as f:
+            f.write("dex data")
+
+        # Initial call populates cache
+        self.assertNotIn(lib1_dir, proj._cached_lib_dex_files)
+        files1 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(files1, [dex1])
+        self.assertIn(lib1_dir, proj._cached_lib_dex_files)
+
+        # Add another dex file to disk without invalidating cache
+        dex2 = os.path.join(lib1_dir, "classes2.dex")
+        with open(dex2, "w") as f:
+            f.write("dex data 2")
+
+        # Cached result returned
+        files2 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(files2, [dex1])
+
+        # Invalidate cache for lib1_dir
+        proj.invalidate_lib_dex_cache(lib1_dir)
+        self.assertNotIn(lib1_dir, proj._cached_lib_dex_files)
+
+        # Subsequent call picks up newly added dex
+        files3 = proj.find_lib_dex_files(lib1_dir)
+        self.assertEqual(len(files3), 2)
+        self.assertIn(dex1, files3)
+        self.assertIn(dex2, files3)
+
+        # Invalidate all
+        proj.invalidate_lib_dex_cache()
+        self.assertEqual(len(proj._cached_lib_dex_files), 0)
+
+    @patch("utils.util.get_bin", return_value="/usr/bin/stub")
+    @patch("os.getenv", return_value="/tmp/android-sdk")
     def test_find_dex_files(self, mock_getenv, mock_get_bin):
         proj = Project(self.project_dir)
 
