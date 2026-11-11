@@ -18,7 +18,7 @@ class Task:
         
         for library in self.project.find_lib_jars():
             library_dir = os.path.dirname(library)
-            dex_files = self.project.find_files(library_dir, ".dex")
+            dex_files = self.project.find_lib_dex_files(library_dir)
             if not dex_files:
                 self.__dex_library(library)
     
@@ -55,6 +55,8 @@ class Task:
             library_path,
             *self.__get_classpath()
         ])
+        # Refresh cache for this library so subsequent tasks observe newly created DEX files
+        self.project.invalidate_lib_dex_cache(library_dir)
     
     def __get_classpath(self):
         # BOLT OPTIMIZATION: Cache classpath list (including empty list when no
