@@ -201,6 +201,21 @@
       color: #f87171;
     }
 
+    .copy-tx-btn {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 0.75rem;
+      border-radius: 6px;
+      padding: 3px 8px;
+      cursor: pointer;
+      margin-top: 6px;
+      display: inline-block;
+    }
+    .copy-tx-btn:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
     .offline-badge {
       display: inline-block;
       padding: 4px 10px;
@@ -304,7 +319,7 @@
     <!-- Activity Tab -->
     <div id="activityTab" class="tab-content" role="tabpanel" aria-labelledby="tab-activity">
       <h3 style="margin-bottom:12px; font-size:1.1rem; color:#38bdf8;">Recent Transactions</h3>
-      <div id="activityList" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
+      <div id="activityList" role="status" aria-live="polite" style="color: var(--text-muted); font-size:0.9rem;">Connect your wallet to view transactions.</div>
     </div>
   </div>
 
@@ -433,6 +448,18 @@
       });
     }
 
+    function copyTxHash(hash, btn) {
+      if (!hash) return;
+      navigator.clipboard.writeText(hash).then(() => {
+        btn.textContent = '✓ Copied';
+        btn.setAttribute('aria-label', 'Transaction hash copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy Hash';
+          btn.setAttribute('aria-label', 'Copy transaction hash');
+        }, 2000);
+      });
+    }
+
     tonConnectUI.onStatusChange(wallet => {
       const copyBtn = document.getElementById('copyAddressBtn');
       const addrEl = document.getElementById('walletAddress');
@@ -473,9 +500,10 @@
         });
         const result = await response.json();
         if (response.ok && result.success) {
+          form.reset();
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small><br><button type="button" class="copy-tx-btn" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy Hash</button>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
@@ -518,9 +546,10 @@
         });
         const result = await response.json();
         if (response.ok && result.success) {
+          form.reset();
           statusDiv.className = 'status-card success';
           statusDiv.style.display = 'block';
-          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small>`;
+          statusDiv.innerHTML = `<strong>Success!</strong><br>${result.message}<br><small>Tx Hash: ${result.tx_hash}</small><br><button type="button" class="copy-tx-btn" aria-label="Copy transaction hash" onclick="copyTxHash('${result.tx_hash}', this)">Copy Hash</button>`;
         } else {
           statusDiv.className = 'status-card error';
           statusDiv.style.display = 'block';
