@@ -27,6 +27,10 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'id="tonMaxBtn"', res.data)
         self.assertIn(b'aria-label="Use maximum TON balance"', res.data)
         self.assertIn(b'fillMaxTonAmount()', res.data)
+        self.assertIn(b'copy-tx-btn', res.data)
+        self.assertIn(b'copyTxHash', res.data)
+        self.assertIn(b'aria-label="Copy transaction hash"', res.data)
+        self.assertIn(b'id="activityList" role="status" aria-live="polite"', res.data)
 
     def test_static_and_manifest_routes(self):
         res_sw = self.client.get('/sw.js')
