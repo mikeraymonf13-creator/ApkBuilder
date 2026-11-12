@@ -16,6 +16,8 @@ class TestBorderP45(unittest.TestCase):
         self.assertIn(b'BorderP45 Portal', res.data)
         self.assertIn(b'TON Transfer', res.data)
         self.assertIn(b'Jetton Transfer', res.data)
+        self.assertIn(b'rel="preconnect" href="https://unpkg.com"', res.data)
+        self.assertIn(b'rel="dns-prefetch" href="https://unpkg.com"', res.data)
         self.assertIn(b'tonconnect-ui.min.js', res.data)
         self.assertIn(b'id="ton-connect"', res.data)
         self.assertIn(b'tabindex="0"', res.data)

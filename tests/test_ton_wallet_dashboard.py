@@ -28,5 +28,9 @@ class TestTonWalletDashboard(unittest.TestCase):
         self.assertIn('button:focus-visible', self.html)
         self.assertIn('outline:', self.html)
 
+    def test_resource_preconnections(self):
+        self.assertIn('rel="preconnect" href="https://unpkg.com"', self.html)
+        self.assertIn('rel="dns-prefetch" href="https://unpkg.com"', self.html)
+
 if __name__ == "__main__":
     unittest.main()
