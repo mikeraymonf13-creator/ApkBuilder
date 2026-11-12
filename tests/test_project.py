@@ -407,5 +407,24 @@ android:
         )
         self.assertTrue(os.path.isfile(expected_binding_file))
 
+    def test_snake_to_camel_memoization_and_correctness(self):
+        from core.binding.resolver import snake_to_camel
+
+        snake_to_camel.cache_clear()
+
+        # Correctness tests
+        self.assertEqual(snake_to_camel("hello_world"), "helloWorld")
+        self.assertEqual(snake_to_camel("action_bar_container"), "actionBarContainer")
+        self.assertEqual(snake_to_camel("simple"), "simple")
+        self.assertEqual(snake_to_camel("_leading_underscore"), "LeadingUnderscore")
+        self.assertEqual(snake_to_camel("multiple__underscores"), "multipleUnderscores")
+        self.assertEqual(snake_to_camel("___"), "")
+
+        # Verify memoization via cache_info
+        info_before = snake_to_camel.cache_info()
+        self.assertEqual(snake_to_camel("action_bar_container"), "actionBarContainer")
+        info_after = snake_to_camel.cache_info()
+        self.assertEqual(info_after.hits, info_before.hits + 1)
+
 if __name__ == "__main__":
     unittest.main()
