@@ -6,18 +6,28 @@ A = f"{{{ANDROID_NS}}}"
 # repeated string concatenation in bind_views during XML AST traversal.
 A_ID = f"{{{ANDROID_NS}}}id"
 
+# BOLT OPTIMIZATION: Memoize converted snake_case identifiers and optimize
+# string partitioning logic to eliminate redundant split/generator allocations during view binding resolution.
+_camel_cache = {}
+
 def snake_to_camel(s):
     if "_" not in s:
         return s
 
-    partes = [p for p in s.split("_") if p]
-    if not partes:
-        return ""
+    cached = _camel_cache.get(s)
+    if cached is not None:
+        return cached
 
-    if s.startswith("_"):
-        return ''.join(p[0].upper() + p[1:] for p in partes)
+    parts = s.split("_")
+    first = parts[0]
+    rest = [p[0].upper() + p[1:] for p in parts[1:] if p]
+    if not first:
+        res = "".join(rest)
     else:
-        return partes[0] + ''.join(p[0].upper() + p[1:] for p in partes[1:])
+        res = first + "".join(rest)
+
+    _camel_cache[s] = res
+    return res
 
 def normalize_id(value):
     if not value:
