@@ -1,3 +1,4 @@
+from functools import lru_cache
 from core.binding.model import ViewNode
 from core.binding.parser import ANDROID_NS
 
@@ -6,6 +7,9 @@ A = f"{{{ANDROID_NS}}}"
 # repeated string concatenation in bind_views during XML AST traversal.
 A_ID = f"{{{ANDROID_NS}}}id"
 
+# BOLT OPTIMIZATION: Memoize snake_to_camel conversions to eliminate redundant
+# string splitting and formatting when processing view IDs across XML layout files.
+@lru_cache(maxsize=1024)
 def snake_to_camel(s):
     if "_" not in s:
         return s
